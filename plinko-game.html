@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>당신에게 커피를 살 수 있는 영광이 있기를!</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 0%, #1e2749 0%, #0b0e1f 70%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+    color: #eef1ff;
+    padding: 20px 12px 40px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 4px 0 2px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+  .sub {
+    font-size: 12px;
+    color: #9aa3c9;
+    margin-bottom: 12px;
+    text-align: center;
+    max-width: 460px;
+  }
+  #board-wrap {
+    position: relative;
+    border-radius: 16px;
+    padding: 10px;
+    background: linear-gradient(160deg, #232a52, #141833);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  canvas {
+    display: block;
+    border-radius: 10px;
+    background: #10132a;
+  }
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 480px;
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  #timer {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 18px;
+    color: #ffd66b;
+  }
+  #windRow {
+    width: 100%;
+    max-width: 480px;
+    font-size: 13px;
+    color: #9dd6ff;
+    margin-bottom: 8px;
+    text-align: center;
+    background: #161b3a;
+    border-radius: 8px;
+    padding: 5px 0;
+    transition: color 0.3s ease;
+  }
+  #windRow.strong { color: #ffd66b; }
+  #windGust {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    background: rgba(16, 20, 46, 0.9);
+    border: 1px solid rgba(157,214,255,0.35);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #cfe8ff;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    white-space: nowrap;
+    z-index: 5;
+  }
+  #windGust.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  #bombBlast {
+    position: absolute;
+    top: 54px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.85);
+    background: rgba(60, 16, 20, 0.92);
+    border: 1px solid rgba(255,140,90,0.5);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffd0b0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap;
+    z-index: 6;
+  }
+  #bombBlast.show {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  #skillBlast {
+    position: absolute;
+    top: 94px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.85);
+    background: rgba(16, 30, 55, 0.92);
+    border: 1px solid rgba(120,190,255,0.5);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #cfe8ff;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap;
+    z-index: 6;
+  }
+  #skillBlast.show {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  button {
+    background: linear-gradient(180deg, #6c8bff, #4a63e0);
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(74,99,224,0.4);
+    transition: transform 0.1s ease;
+  }
+  button:active { transform: scale(0.96); }
+  button:disabled {
+    background: #3a3f5c;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  #resetBtn {
+    background: linear-gradient(180deg, #4b5270, #333a56);
+    box-shadow: none;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  #playerCountRow {
+    font-size: 13px;
+    color: #cfd6f5;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #playerCount {
+    width: 56px;
+    padding: 5px 6px;
+    border-radius: 6px;
+    border: 1px solid #3a3f5c;
+    background: #1b2044;
+    color: #eef1ff;
+    font-size: 14px;
+    text-align: center;
+  }
+  #topControls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  #legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    max-width: 460px;
+  }
+  .legendItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #1b2044;
+    border-radius: 20px;
+    padding: 5px 10px 5px 6px;
+    font-size: 12px;
+  }
+  .legendDot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(255,255,255,0.3);
+  }
+  #controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    align-items: center;
+  }
+  #result {
+    min-height: 22px;
+    margin-top: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #7effa1;
+    text-align: center;
+  }
+  #leaderboard {
+    width: 100%;
+    max-width: 460px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .rankRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #1b2044;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  .rankNum {
+    font-weight: 800;
+    width: 26px;
+    color: #ffd66b;
+  }
+  .rankDot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(255,255,255,0.3);
+  }
+  .rankName { flex: 1; }
+  .rankTime { color: #9aa3c9; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .hint { font-size: 12px; color: #7a83ad; margin-top: 10px; text-align:center; max-width: 460px; }
+</style>
+</head>
+<body>
+  <h1>☕ 당신에게 커피를 살 수 있는 영광이 있기를!</h1>
+  <div class="sub">인원수를 고르고 보드를 클릭해 출발 위치를 선택한 뒤 드롭! 공들이 깔때기를 타고 내려가 먼저 도착하는 순서가 기록돼요</div>
+
+  <div id="playerCountRow">
+    👤 인원수: <input type="number" id="playerCount" min="1" max="50" value="5"> 명 (최대 50명)
+  </div>
+
+  <div id="topControls">
+    <button id="dropBtn">드롭 (보드 클릭으로 위치 선택)</button>
+  </div>
+
+  <div id="legend"></div>
+
+  <div id="hud">
+    <div>⏱ 경과 시간: <span id="timer">0.0</span>s</div>
+    <div id="status">대기 중</div>
+  </div>
+  <div id="windRow">💨 바람: <span id="windVal">고요</span></div>
+
+  <div id="board-wrap">
+    <canvas id="board" width="460" height="1425"></canvas>
+    <div id="windGust"></div>
+    <div id="bombBlast">💥 폭탄이 터졌습니다!</div>
+    <div id="skillBlast"></div>
+  </div>
+
+  <div id="controls">
+    <button id="resetBtn">처음부터 다시 시작</button>
+  </div>
+
+  <div id="result"></div>
+  <div id="leaderboard"></div>
+
+  <div class="hint">깔때기 구조라 아래로 갈수록 좁아져요. 목 부분(neck)은 매우 좁아서 공이 많을수록 서로 부딪히며 순위가 갈릴 수 있어요.</div>
+
+<script>
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const MARGIN = 40;
+const PLAY_LEFT = MARGIN, PLAY_RIGHT = W - MARGIN;
+const CENTER_X = (PLAY_LEFT + PLAY_RIGHT) / 2;
+const NECK_Y = H - 160;      // 이 높이부터는 좁은 목(neck) 구간
+const NECK_WIDTH = 70;       // 목 부분 폭 (공 5개가 한번에 못 지나갈 정도)
+const NECK_LEFT = CENTER_X - NECK_WIDTH / 2;
+const NECK_RIGHT = CENTER_X + NECK_WIDTH / 2;
+const CEILING_Y = 4;
+
+function funnelBounds(y) {
+  if (y >= NECK_Y) return { left: NECK_LEFT, right: NECK_RIGHT };
+  const t = Math.max(0, y) / NECK_Y;
+  return {
+    left: PLAY_LEFT + (NECK_LEFT - PLAY_LEFT) * t,
+    right: PLAY_RIGHT - (PLAY_RIGHT - NECK_RIGHT) * t
+  };
+}
+
+const GRAVITY = 550;
+const RESTITUTION = 0.42;
+const WALL_RESTITUTION = 0.55;
+const BALL_RADIUS = 9;
+const PEG_H = 7;
+const AIR_DAMPING = 0.996;
+const MAX_SPEED = 380;
+const HOLE_WIDTH = 13;
+
+const ROWS = 19;      // 층수 조금 더 증가 (기존 17)
+const ROW_GAP = 66;   // 1.5배 (기존 44)
+const startY = 135;   // 1.5배 (기존 90)
+
+function generateRow(y) {
+  const bounds = funnelBounds(y);
+  const totalWidth = bounds.right - bounds.left;
+  const fullWidth = PLAY_RIGHT - PLAY_LEFT;
+  const baseHoles = Math.random() < 0.5 ? 18 : 24;
+  const numHoles = Math.max(1, Math.round(baseHoles * (totalWidth / fullWidth)));
+
+  let holes = [];
+  let attempts = 0;
+  while (holes.length < numHoles && attempts < 200 && totalWidth > HOLE_WIDTH + 4) {
+    attempts++;
+    const start = bounds.left + Math.random() * Math.max(1, totalWidth - HOLE_WIDTH);
+    const end = start + HOLE_WIDTH;
+    const overlaps = holes.some(h => !(end + 5 < h.start || start - 5 > h.end));
+    if (!overlaps) holes.push({ start, end });
+  }
+  holes.sort((a, b) => a.start - b.start);
+
+  const segments = [];
+  let cursor = bounds.left;
+  for (const h of holes) {
+    if (h.start - cursor > 4) segments.push({ x1: cursor, x2: h.start, y });
+    cursor = h.end;
+  }
+  if (bounds.right - cursor > 4) segments.push({ x1: cursor, x2: bounds.right, y });
+
+  const WALL_GAP = 8;
+  const clipped = [];
+  for (const s of segments) {
+    let x1 = s.x1, x2 = s.x2;
+    if (x1 <= bounds.left + 2) x1 = bounds.left + WALL_GAP;
+    if (x2 >= bounds.right - 2) x2 = bounds.right - WALL_GAP;
+    if (x2 - x1 > 4) clipped.push({ x1, x2, y });
+  }
+  return clipped;
+}
+
+function buildPegs() {
+  const result = [];
+  for (let r = 0; r < ROWS; r++) {
+    const y = startY + r * ROW_GAP;
+    for (const seg of generateRow(y)) {
+      result.push({
+        cx: (seg.x1 + seg.x2) / 2,
+        cy: y,
+        halfW: (seg.x2 - seg.x1) / 2,
+        halfH: PEG_H / 2
+      });
+    }
+  }
+  return result;
+}
+
+let pegs = buildPegs();
+
+// 독버섯 폭탄: 정찰병 캐릭터가 2초마다 걸어와서 심고 사라짐
+const BOMB_CAP_R = 7.5;
+const BOMB_STEM_H = 4;
+const MAX_BOMBS = 40;
+const WALKER_INTERVAL = 2.0;
+const WALKER_SPEED = 130;
+const EXPLOSION_FORCE = 460;
+const BOMB_HOLE_WIDTH = 8;
+
+let bombs = [];
+let explosionParticles = [];
+let walkers = [];
+let walkerTimer = 3.0;
+
+const bombBlastEl = document.getElementById('bombBlast');
+let bombBlastTimeout = null;
+
+function seedInitialBombs() {
+  const total = 27;
+  let placed = 0, attempts = 0;
+  while (placed < total && attempts < 400) {
+    attempts++;
+    const peg = pegs[Math.floor(Math.random() * pegs.length)];
+    if (!peg) break;
+    const margin = Math.min(9, Math.max(0, peg.halfW - 3));
+    const x = peg.cx + (Math.random() * 2 - 1) * margin;
+    const y = peg.cy - peg.halfH - BOMB_STEM_H;
+    const tooClose = bombs.some(b => Math.hypot(b.x - x, b.y - y) < 26);
+    if (!tooClose) {
+      bombs.push({ x, y, wobble: Math.random() * Math.PI * 2, peg });
+      placed++;
+    }
+  }
+}
+seedInitialBombs();
+
+// ===== 공(최대 50개) 관리 =====
+const playerCountInput = document.getElementById('playerCount');
+
+function generateBallInfo(n) {
+  const info = [];
+  for (let i = 0; i < n; i++) {
+    const hue = Math.round((i * 360) / n);
+    info.push({
+      name: `플레이어 ${i + 1}번`,
+      color: `hsl(${hue}, 72%, 60%)`
+    });
+  }
+  return info;
+}
+
+function getPlayerCount() {
+  let n = parseInt(playerCountInput.value, 10);
+  if (isNaN(n)) n = 5;
+  n = Math.max(1, Math.min(50, n));
+  playerCountInput.value = n;
+  return n;
+}
+
+let BALL_INFO = generateBallInfo(5);
+
+const legendEl = document.getElementById('legend');
+function renderLegend() {
+  legendEl.innerHTML = BALL_INFO.map(info => `
+    <div class="legendItem">
+      <span class="legendDot" style="background:${info.color}"></span>
+      <span>${info.name}</span>
+    </div>
+  `).join('');
+}
+renderLegend();
+
+playerCountInput.addEventListener('change', () => {
+  const n = getPlayerCount();
+  BALL_INFO = generateBallInfo(n);
+  renderLegend();
+});
+
+let balls = [];
+let dropX = CENTER_X;
+let dropStartTime = null;
+let gameEnded = false;
+let finishOrder = [];
+let animId = null;
+let lastTs = null;
+
+function pickActiveBall() {
+  const active = balls.filter(b => b && !b.landed);
+  if (active.length === 0) return null;
+  return active[Math.floor(Math.random() * active.length)];
+}
+function pickLeadingBall() {
+  let leader = null;
+  for (const b of balls) {
+    if (b && !b.landed && (!leader || b.y > leader.y)) leader = b;
+  }
+  return leader;
+}
+function pickMostDamagedBall() {
+  let target = null;
+  for (const b of balls) {
+    if (b && !b.landed && (b.hitCount || 0) > 0 && (!target || b.hitCount > target.hitCount)) target = b;
+  }
+  return target;
+}
+
+// 정찰병(버섯 심기)
+function pickWalkerTarget() {
+  const lead = pickLeadingBall();
+  let candidates = pegs;
+  if (lead) {
+    const below = pegs.filter(p => p.cy > lead.y + 24);
+    if (below.length > 0) candidates = below;
+  }
+  const peg = candidates[Math.floor(Math.random() * candidates.length)];
+  const margin = Math.min(9, Math.max(0, peg.halfW - 3));
+  const plantX = peg.cx + (Math.random() * 2 - 1) * margin;
+  const plantY = peg.cy - peg.halfH - BOMB_STEM_H;
+  const walkY = peg.cy - peg.halfH - 9;
+  return { plantX, plantY, walkY, peg };
+}
+
+const MAX_WALKERS = 2; // 버섯 심는 캐릭터 수 2배로 증가
+
+function startWalker() {
+  if (walkers.length >= MAX_WALKERS) return;
+  const target = pickWalkerTarget();
+  if (!target) return;
+  const fromLeft = Math.random() < 0.5;
+  walkers.push({
+    x: fromLeft ? PLAY_LEFT - 22 : PLAY_RIGHT + 22,
+    y: target.walkY,
+    targetX: target.plantX,
+    plantX: target.plantX,
+    plantY: target.plantY,
+    plantPeg: target.peg,
+    dir: fromLeft ? 1 : -1,
+    state: 'entering',
+    stateTimer: 0,
+    legPhase: 0
+  });
+}
+
+function spawnPuffParticles(x, y) {
+  for (let i = 0; i < 8; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 20 + Math.random() * 40;
+    explosionParticles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 20,
+      life: 0.3 + Math.random() * 0.2,
+      age: 0,
+      r: 1.4 + Math.random(),
+      color: '200,190,160'
+    });
+  }
+}
+
+function updateWalker(dt) {
+  for (let i = walkers.length - 1; i >= 0; i--) {
+    const walker = walkers[i];
+    if (walker.state === 'entering') {
+      walker.x += walker.dir * WALKER_SPEED * dt;
+      walker.legPhase += dt * 11;
+      const reached = walker.dir > 0 ? walker.x >= walker.targetX : walker.x <= walker.targetX;
+      if (reached) {
+        walker.x = walker.targetX;
+        walker.state = 'planting';
+        walker.stateTimer = 0;
+      }
+    } else if (walker.state === 'planting') {
+      walker.stateTimer += dt;
+      if (walker.stateTimer >= 0.45) {
+        if (bombs.length < MAX_BOMBS) {
+          bombs.push({ x: walker.plantX, y: walker.plantY, wobble: Math.random() * Math.PI * 2, peg: walker.plantPeg });
+          spawnPuffParticles(walker.plantX, walker.plantY);
+        }
+        walker.state = 'leaving';
+      }
+    } else if (walker.state === 'leaving') {
+      walker.x += walker.dir * WALKER_SPEED * dt;
+      walker.legPhase += dt * 11;
+      if (walker.x < PLAY_LEFT - 40 || walker.x > PLAY_RIGHT + 40) {
+        walkers.splice(i, 1);
+      }
+    }
+  }
+}
+
+function drawWalker() {
+  for (const walker of walkers) {
+    const crouch = walker.state === 'planting' ? 0.7 : 1;
+    const bob = walker.state === 'planting' ? 0 : Math.abs(Math.sin(walker.legPhase)) * 1.6;
+    const legSwing = Math.sin(walker.legPhase) * 2.6;
+    ctx.save();
+    ctx.translate(walker.x, walker.y - bob);
+    if (walker.dir < 0) ctx.scale(-1, 1);
+    ctx.strokeStyle = '#5c4632';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-2.5, 6 * crouch); ctx.lineTo(-2.5 + legSwing, 10 * crouch);
+    ctx.moveTo(2.5, 6 * crouch); ctx.lineTo(2.5 - legSwing, 10 * crouch);
+    ctx.stroke();
+    ctx.scale(1, crouch);
+    ctx.fillStyle = '#7a9b5e';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 6.5, 7.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3f6b39';
+    ctx.beginPath();
+    ctx.moveTo(-7, -5.5); ctx.lineTo(7, -5.5); ctx.lineTo(0, -13); ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(2.6, -1, 2.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.arc(3.3, -1, 1, 0, Math.PI * 2);
+    ctx.fill();
+    if (walker.state === 'entering') {
+      ctx.fillStyle = '#b84fd1';
+      ctx.beginPath();
+      ctx.ellipse(-5.5, -3.5, 2.6, 2, 0, Math.PI, 0);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+// 치료사(간호사): 10초마다 걸어와서 가장 많이 손상된 공을 회복
+const HEAL_INTERVAL = 10.0;
+let healerTimer = 4.0;
+let healer = null;
+
+function pickHealerTarget() {
+  const target = pickMostDamagedBall();
+  if (!target) return null;
+  let nearest = null, nearestDist = Infinity;
+  for (const p of pegs) {
+    const d = Math.abs(p.cy - target.y);
+    if (d < nearestDist) { nearestDist = d; nearest = p; }
+  }
+  if (!nearest) return null;
+  const margin = Math.min(9, Math.max(0, nearest.halfW - 3));
+  const walkX = nearest.cx + (Math.random() * 2 - 1) * margin;
+  const walkY = nearest.cy - nearest.halfH - 9;
+  return { walkX, walkY, targetBall: target };
+}
+
+function startHealer() {
+  const target = pickHealerTarget();
+  if (!target) return;
+  const fromLeft = Math.random() < 0.5;
+  healer = {
+    x: fromLeft ? PLAY_LEFT - 22 : PLAY_RIGHT + 22,
+    y: target.walkY,
+    targetX: target.walkX,
+    targetBallId: target.targetBall.id,
+    dir: fromLeft ? 1 : -1,
+    state: 'entering',
+    stateTimer: 0,
+    legPhase: 0
+  };
+}
+
+function spawnHealParticles(x, y) {
+  for (let i = 0; i < 14; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 40 + Math.random() * 90;
+    explosionParticles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 30,
+      life: 0.4 + Math.random() * 0.3,
+      age: 0,
+      r: 1.6 + Math.random() * 1.8,
+      color: Math.random() < 0.5 ? '150,255,180' : '255,255,255'
+    });
+  }
+}
+
+function updateHealer(dt) {
+  if (!healer) return;
+  if (healer.state === 'entering') {
+    healer.x += healer.dir * WALKER_SPEED * dt;
+    healer.legPhase += dt * 11;
+    const reached = healer.dir > 0 ? healer.x >= healer.targetX : healer.x <= healer.targetX;
+    if (reached) { healer.x = healer.targetX; healer.state = 'healing'; healer.stateTimer = 0; }
+  } else if (healer.state === 'healing') {
+    healer.stateTimer += dt;
+    if (healer.stateTimer >= 0.5) {
+      const target = balls.find(b => b && b.id === healer.targetBallId && !b.landed);
+      if (target && (target.hitCount || 0) > 0) {
+        target.hitCount -= 1;
+        target.shape = generateBallShape(target.hitCount);
+        spawnHealParticles(target.x, target.y);
+        announceSkill(`💚 치료사가 ${target.name} 공을 회복시킵니다!`);
+      }
+      healer.state = 'leaving';
+    }
+  } else if (healer.state === 'leaving') {
+    healer.x += healer.dir * WALKER_SPEED * dt;
+    healer.legPhase += dt * 11;
+    if (healer.x < PLAY_LEFT - 40 || healer.x > PLAY_RIGHT + 40) healer = null;
+  }
+}
+
+function drawHealer() {
+  if (!healer) return;
+  const crouch = healer.state === 'healing' ? 0.8 : 1;
+  const bob = healer.state === 'healing' ? 0 : Math.abs(Math.sin(healer.legPhase)) * 1.6;
+  const legSwing = Math.sin(healer.legPhase) * 2.6;
+  ctx.save();
+  ctx.translate(healer.x, healer.y - bob);
+  if (healer.dir < 0) ctx.scale(-1, 1);
+  ctx.strokeStyle = '#c9c9d6';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(-2.5, 6 * crouch); ctx.lineTo(-2.5 + legSwing, 10 * crouch);
+  ctx.moveTo(2.5, 6 * crouch); ctx.lineTo(2.5 - legSwing, 10 * crouch);
+  ctx.stroke();
+  ctx.scale(1, crouch);
+  ctx.fillStyle = '#f2f2f7';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 6.5, 7.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ff7d90';
+  ctx.beginPath();
+  ctx.arc(0, -6, 5, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = '#ff5a6b';
+  ctx.fillRect(-1, -3, 2, 5);
+  ctx.fillRect(-2.5, -1.5, 5, 2);
+  ctx.fillStyle = '#333';
+  ctx.beginPath();
+  ctx.arc(2.6, -1, 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// 🕳️ 두더지: 5초마다 살금살금 나타나 활성 공 중 하나의 바닥층에 구멍을 뚫음
+const MOLE_INTERVAL = 2.5;
+const MOLE_HOLE_WIDTH = 22;
+let moleTimer = 2.0;
+let mole = null;
+
+function pickMoleTarget() {
+  const ref = pickActiveBall();
+  if (!ref) return null;
+  let nearest = null, nearestDist = Infinity;
+  for (const p of pegs) {
+    if (p.cy <= ref.y) continue;
+    const d = p.cy - ref.y;
+    if (d < nearestDist) { nearestDist = d; nearest = p; }
+  }
+  if (!nearest) return null;
+  const margin = Math.min(9, Math.max(0, nearest.halfW - 3));
+  const x = nearest.cx + (Math.random() * 2 - 1) * margin;
+  return { x, y: nearest.cy, peg: nearest };
+}
+
+function startMole() {
+  const t = pickMoleTarget();
+  if (!t) return;
+  mole = { x: t.x, y: t.y, peg: t.peg, state: 'rising', stateTimer: 0 };
+}
+
+function updateMole(dt) {
+  if (!mole) return;
+  mole.stateTimer += dt;
+  if (mole.state === 'rising' && mole.stateTimer >= 0.35) {
+    mole.state = 'digging'; mole.stateTimer = 0;
+  } else if (mole.state === 'digging' && mole.stateTimer >= 0.5) {
+    carveHoleAtPeg(mole.peg, mole.x, MOLE_HOLE_WIDTH);
+    spawnPuffParticles(mole.x, mole.y);
+    announceSkill('⛏️ 두더지가 길에 구멍을 뚫었습니다!');
+    mole.state = 'sinking'; mole.stateTimer = 0;
+  } else if (mole.state === 'sinking' && mole.stateTimer >= 0.35) {
+    mole = null;
+  }
+}
+
+function drawMole(m) {
+  if (!m) return;
+  let scale = 1;
+  if (m.state === 'rising') scale = Math.min(1, m.stateTimer / 0.35);
+  else if (m.state === 'sinking') scale = Math.max(0, 1 - m.stateTimer / 0.35);
+  if (scale <= 0) return;
+  ctx.save();
+  ctx.translate(m.x, m.y);
+  ctx.scale(1, scale);
+  ctx.fillStyle = '#5c3f28';
+  ctx.beginPath();
+  ctx.ellipse(0, 5, 8, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#8a7461';
+  ctx.beginPath();
+  ctx.ellipse(0, -2, 6, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ff9fb0';
+  ctx.beginPath();
+  ctx.arc(0, -7, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-2.6, -4); ctx.lineTo(-1, -4);
+  ctx.moveTo(1, -4); ctx.lineTo(2.6, -4);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 🕳️ 풍차 아래 두더지: 10초마다 풍차 근처 막대에 나타나 작업함
+const WINDMILL_MOLE_INTERVAL = 10.0;
+let windmillMoleTimer = 5.0;
+let windmillMole = null;
+
+function pickWindmillMoleTarget() {
+  let nearest = null, nearestDist = Infinity;
+  for (const p of pegs) {
+    const d = Math.abs(p.cy - WINDMILL_Y);
+    if (d < nearestDist) { nearestDist = d; nearest = p; }
+  }
+  if (!nearest) return null;
+  const margin = Math.min(9, Math.max(0, nearest.halfW - 3));
+  const x = nearest.cx + (Math.random() * 2 - 1) * margin;
+  return { x, y: nearest.cy, peg: nearest };
+}
+
+function startWindmillMole() {
+  const t = pickWindmillMoleTarget();
+  if (!t) return;
+  windmillMole = { x: t.x, y: t.y, peg: t.peg, state: 'rising', stateTimer: 0 };
+}
+
+function updateWindmillMole(dt) {
+  if (!windmillMole) return;
+  windmillMole.stateTimer += dt;
+  if (windmillMole.state === 'rising' && windmillMole.stateTimer >= 0.35) {
+    windmillMole.state = 'digging'; windmillMole.stateTimer = 0;
+  } else if (windmillMole.state === 'digging' && windmillMole.stateTimer >= 0.5) {
+    carveHoleAtPeg(windmillMole.peg, windmillMole.x, MOLE_HOLE_WIDTH);
+    spawnPuffParticles(windmillMole.x, windmillMole.y);
+    announceSkill('⛏️ 풍차 근처에서 두더지가 작업 중입니다!');
+    windmillMole.state = 'sinking'; windmillMole.stateTimer = 0;
+  } else if (windmillMole.state === 'sinking' && windmillMole.stateTimer >= 0.35) {
+    windmillMole = null;
+  }
+}
+
+// 🦫 비버: 20초마다 나타나 8방향 중 하나로 새 길을 설치 (기존 길과 안 겹치게)
+const BEAVER_INTERVAL = 20.0;
+const BEAVER_BLOCK = 10;
+const BEAVER_PATH_LEN = 84;
+let beaverTimer = 6.0;
+let beaver = null;
+
+function pickBeaverStart() {
+  const ref = pickActiveBall();
+  if (!ref) return null;
+  let nearest = null, nearestDist = Infinity;
+  for (const p of pegs) {
+    const d = Math.abs(p.cy - ref.y);
+    if (d < nearestDist) { nearestDist = d; nearest = p; }
+  }
+  if (!nearest) return null;
+  const margin = Math.min(9, Math.max(0, nearest.halfW - 3));
+  const x = nearest.cx + (Math.random() * 2 - 1) * margin;
+  const y = nearest.cy + nearest.halfH;
+  return { x, y };
+}
+
+function startBeaver() {
+  const start = pickBeaverStart();
+  if (!start) return;
+  const dirIndex = Math.floor(Math.random() * 8);
+  beaver = { x: start.x, y: start.y, dirIndex, state: 'appearing', stateTimer: 0 };
+}
+
+function blockOverlapsPegs(bx, by, halfSize) {
+  for (const p of pegs) {
+    if (Math.abs(bx - p.cx) < halfSize + p.halfW && Math.abs(by - p.cy) < halfSize + p.halfH) return true;
+  }
+  return false;
+}
+
+function buildBeaverPath(x, y, dirIndex) {
+  const angle = dirIndex * (Math.PI / 4);
+  const dx = Math.cos(angle), dy = Math.sin(angle);
+  const numBlocks = Math.max(3, Math.round(BEAVER_PATH_LEN / BEAVER_BLOCK));
+  const halfSize = BEAVER_BLOCK / 2;
+  for (let i = 0; i < numBlocks; i++) {
+    const bx = x + dx * BEAVER_BLOCK * (i + 1);
+    const by = y + dy * BEAVER_BLOCK * (i + 1);
+    const bounds = funnelBounds(by);
+    if (bx < bounds.left + 6 || bx > bounds.right - 6 || by < CEILING_Y + 6 || by > H - 20) continue;
+    if (blockOverlapsPegs(bx, by, halfSize)) continue;
+    pegs.push({ cx: bx, cy: by, halfW: halfSize, halfH: halfSize });
+  }
+}
+
+function updateBeaver(dt) {
+  if (!beaver) return;
+  beaver.stateTimer += dt;
+  if (beaver.state === 'appearing' && beaver.stateTimer >= 0.35) {
+    beaver.state = 'building'; beaver.stateTimer = 0;
+  } else if (beaver.state === 'building' && beaver.stateTimer >= 0.6) {
+    buildBeaverPath(beaver.x, beaver.y, beaver.dirIndex);
+    spawnPuffParticles(beaver.x, beaver.y);
+    announceSkill('🦫 비버가 새 길을 설치합니다!');
+    beaver.state = 'leaving'; beaver.stateTimer = 0;
+  } else if (beaver.state === 'leaving' && beaver.stateTimer >= 0.35) {
+    beaver = null;
+  }
+}
+
+function drawBeaver() {
+  if (!beaver) return;
+  let scale = 1;
+  if (beaver.state === 'appearing') scale = Math.min(1, beaver.stateTimer / 0.35);
+  else if (beaver.state === 'leaving') scale = Math.max(0, 1 - beaver.stateTimer / 0.35);
+  if (scale <= 0) return;
+  ctx.save();
+  ctx.translate(beaver.x, beaver.y);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = '#5c3a1e';
+  ctx.beginPath();
+  ctx.ellipse(6, 3, 4, 2.5, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#8a5a2f';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 7, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#c9975a';
+  ctx.beginPath();
+  ctx.arc(-4, -1, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-5.5, 0, 2, 2.4);
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(-5, -3, 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// 폭발 이펙트 (파티클/링/화면 흔들림)
+let explosionRings = [];
+let screenShake = 0;
+
+function spawnExplosionParticles(x, y) {
+  for (let i = 0; i < 20; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 90 + Math.random() * 240;
+    explosionParticles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.35 + Math.random() * 0.3,
+      age: 0,
+      r: 2 + Math.random() * 2.5,
+      color: Math.random() < 0.5 ? '255,150,90' : '210,120,255'
+    });
+  }
+}
+
+function triggerExplosionMotion(x, y) {
+  spawnExplosionParticles(x, y);
+  explosionRings.push({ x, y, age: 0, life: 0.4 });
+  explosionRings.push({ x, y, age: 0, life: 0.55 });
+  screenShake = 9;
+}
+
+function updateExplosionParticles(dt) {
+  for (let i = explosionParticles.length - 1; i >= 0; i--) {
+    const p = explosionParticles[i];
+    p.age += dt;
+    if (p.age >= p.life) { explosionParticles.splice(i, 1); continue; }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vx *= 0.92;
+    p.vy *= 0.92;
+  }
+}
+
+function updateExplosionRings(dt) {
+  for (let i = explosionRings.length - 1; i >= 0; i--) {
+    const r = explosionRings[i];
+    r.age += dt;
+    if (r.age >= r.life) explosionRings.splice(i, 1);
+  }
+  if (screenShake > 0) screenShake = Math.max(0, screenShake - screenShake * 0.25 - 0.4);
+}
+
+function drawExplosionParticles() {
+  for (const p of explosionParticles) {
+    const alpha = 1 - p.age / p.life;
+    ctx.fillStyle = `rgba(${p.color}, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawExplosionRings() {
+  for (const r of explosionRings) {
+    const t = r.age / r.life;
+    const radius = BOMB_CAP_R * 1.2 + t * 60;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(${r.color || '255,170,90'},${(1 - t) * 0.9})`;
+    ctx.lineWidth = 3 * (1 - t) + 0.5;
+    ctx.stroke();
+  }
+}
+
+function drawBombs(ts) {
+  for (const b of bombs) {
+    const wob = Math.sin(ts / 320 + b.wobble) * 0.8;
+    const capY = b.y - 1 + wob * 0.3;
+    ctx.fillStyle = '#ecdfc6';
+    ctx.fillRect(b.x - 1.5, b.y - 0.5, 3, BOMB_STEM_H);
+    ctx.fillStyle = '#b84fd1';
+    ctx.beginPath();
+    ctx.ellipse(b.x, capY, BOMB_CAP_R, BOMB_CAP_R * 0.72, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.strokeStyle = '#7c2f92';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#ffe9ff';
+    ctx.beginPath();
+    ctx.arc(b.x - 3, capY - 3, 1.1, 0, Math.PI * 2);
+    ctx.arc(b.x + 2.5, capY - 4, 0.9, 0, Math.PI * 2);
+    ctx.arc(b.x + 0.5, capY - 2, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    const glow = 0.4 + 0.6 * Math.abs(Math.sin(ts / 140));
+    ctx.fillStyle = `rgba(255,70,70,${glow})`;
+    ctx.beginPath();
+    ctx.arc(b.x, capY - BOMB_CAP_R * 0.72 - 0.5, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// 폭탄이 터진 자리의 막대(길)에 작은 구멍을 냄
+function carveHoleAtPeg(peg, x, width) {
+  if (!peg) return;
+  const idx = pegs.indexOf(peg);
+  if (idx === -1) return;
+  const holeHalf = (width || BOMB_HOLE_WIDTH) / 2;
+  const holeStart = x - holeHalf;
+  const holeEnd = x + holeHalf;
+  const segStart = peg.cx - peg.halfW;
+  const segEnd = peg.cx + peg.halfW;
+  pegs.splice(idx, 1);
+  if (holeStart - segStart > 6) {
+    const w = holeStart - segStart;
+    pegs.push({ cx: segStart + w / 2, cy: peg.cy, halfW: w / 2, halfH: peg.halfH });
+  }
+  if (segEnd - holeEnd > 6) {
+    const w = segEnd - holeEnd;
+    pegs.push({ cx: holeEnd + w / 2, cy: peg.cy, halfW: w / 2, halfH: peg.halfH });
+  }
+}
+
+// 폭탄/번개에 맞을수록 공 모양이 점점 각지고 울퉁불퉁해짐 (최종 30단계에서 완전한 삼각형)
+const MAX_DAMAGE_STAGE = 30;
+function generateBallShape(hits) {
+  const progress = Math.min(hits, MAX_DAMAGE_STAGE) / MAX_DAMAGE_STAGE;
+  const sides = Math.max(3, Math.round(10 - progress * 7));
+  const jag = progress * 0.42;
+  const variance = [];
+  for (let i = 0; i < sides; i++) variance.push(1 - jag + Math.random() * jag * 1.4);
+  return { sides, variance };
+}
+
+function circleRectCollision(cx, cy, cr, rx, ry_top, ry_bottom, rw) {
+  const halfW = rw / 2;
+  const closestX = Math.max(rx - halfW, Math.min(cx, rx + halfW));
+  const closestY = Math.max(ry_top, Math.min(cy, ry_bottom));
+  const dx = cx - closestX, dy = cy - closestY;
+  const distSq = dx * dx + dy * dy;
+  if (distSq < cr * cr) {
+    const dist = Math.sqrt(distSq) || 0.0001;
+    return { nx: dx / dist, ny: dy / dist, pen: cr - dist };
+  }
+  return null;
+}
+
+function circleBarCollision(cx, cy, cr, rx, ry, halfW, halfH) {
+  const closestX = Math.max(rx - halfW, Math.min(cx, rx + halfW));
+  const closestY = Math.max(ry - halfH, Math.min(cy, ry + halfH));
+  const dx = cx - closestX, dy = cy - closestY;
+  const distSq = dx * dx + dy * dy;
+  if (distSq < cr * cr) {
+    const dist = Math.sqrt(distSq) || 0.0001;
+    return { nx: dx / dist, ny: dy / dist, pen: cr - dist };
+  }
+  return null;
+}
+
+// 🌬️ 풍차: 골대 근처(목 구간)에서 시계방향으로 천천히 회전하는 장애물
+const WINDMILL_X = CENTER_X;
+const WINDMILL_Y = H - 100;
+const WINDMILL_BLADE_LEN = 22;
+const WINDMILL_BLADE_HALF_W = 3.5;
+const WINDMILL_HUB_R = 7;
+const WINDMILL_ROT_SPEED = 0.35; // rad/s, 느리게 시계방향
+
+let windmillAngle = 0;
+
+function updateWindmill(dt) {
+  windmillAngle += WINDMILL_ROT_SPEED * dt;
+}
+
+function drawWindmill() {
+  ctx.save();
+  ctx.translate(WINDMILL_X, WINDMILL_Y);
+  for (let i = 0; i < 4; i++) {
+    const a = windmillAngle + i * (Math.PI / 2);
+    ctx.save();
+    ctx.rotate(a);
+    ctx.fillStyle = i % 2 === 0 ? '#ffd66b' : '#ff9f6b';
+    ctx.beginPath();
+    ctx.roundRect(0, -WINDMILL_BLADE_HALF_W, WINDMILL_BLADE_LEN, WINDMILL_BLADE_HALF_W * 2, 2);
+    ctx.fill();
+    ctx.strokeStyle = '#7c4a1e';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle = '#4b5486';
+  ctx.beginPath();
+  ctx.arc(0, 0, WINDMILL_HUB_R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#8fa3ff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 회전하는 막대(날개)와 원의 충돌: 허브 기준 로컬 좌표로 변환해서 계산
+function circleRotatedBarCollision(cx, cy, cr, hubX, hubY, bladeAngle, length, halfWidth) {
+  const dx = cx - hubX, dy = cy - hubY;
+  const cosA = Math.cos(bladeAngle), sinA = Math.sin(bladeAngle);
+  const localX = dx * cosA + dy * sinA;
+  const localY = -dx * sinA + dy * cosA;
+  const closestX = Math.max(0, Math.min(localX, length));
+  const closestY = Math.max(-halfWidth, Math.min(localY, halfWidth));
+  const distX = localX - closestX, distY = localY - closestY;
+  const distSq = distX * distX + distY * distY;
+  if (distSq < cr * cr) {
+    const dist = Math.sqrt(distSq) || 0.0001;
+    const localNx = distX / dist, localNy = distY / dist;
+    const worldNx = localNx * cosA - localNy * sinA;
+    const worldNy = localNx * sinA + localNy * cosA;
+    return { nx: worldNx, ny: worldNy, pen: cr - dist };
+  }
+  return null;
+}
+
+function resolveWindmillCollision(b) {
+  if (!b || b.landed) return;
+  for (let i = 0; i < 4; i++) {
+    const a = windmillAngle + i * (Math.PI / 2);
+    const col = circleRotatedBarCollision(b.x, b.y, b.radius, WINDMILL_X, WINDMILL_Y, a, WINDMILL_BLADE_LEN, WINDMILL_BLADE_HALF_W);
+    if (col) {
+      b.x += col.nx * col.pen;
+      b.y += col.ny * col.pen;
+      const dot = b.vx * col.nx + b.vy * col.ny;
+      if (dot < 0) {
+        const impulse = (1 + RESTITUTION) * dot;
+        b.vx -= impulse * col.nx;
+        b.vy -= impulse * col.ny;
+      }
+      // 회전하는 날개에 맞은 느낌: 접선 방향으로 살짝 밀어냄
+      const distFromHub = Math.hypot(b.x - WINDMILL_X, b.y - WINDMILL_Y);
+      const tangentX = -Math.sin(a), tangentY = Math.cos(a);
+      const kick = WINDMILL_ROT_SPEED * distFromHub * 40;
+      b.vx += tangentX * kick;
+      b.vy += tangentY * kick;
+    }
+  }
+  const dx = b.x - WINDMILL_X, dy = b.y - WINDMILL_Y;
+  const dist = Math.hypot(dx, dy);
+  const minDist = b.radius + WINDMILL_HUB_R;
+  if (dist < minDist && dist > 0.001) {
+    const nx = dx / dist, ny = dy / dist;
+    b.x += nx * (minDist - dist);
+    b.y += ny * (minDist - dist);
+    const dot = b.vx * nx + b.vy * ny;
+    if (dot < 0) {
+      const impulse = (1 + RESTITUTION) * dot;
+      b.vx -= impulse * nx;
+      b.vy -= impulse * ny;
+    }
+  }
+}
+
+// 🛸 UFO: 맵 중간에 떠 있으며 10초마다 무작위 공을 살짝 끌어당김
+const UFO_X = CENTER_X;
+const UFO_Y = Math.round((startY + NECK_Y) / 2);
+const UFO_INTERVAL = 10.0;
+const UFO_PULL_DURATION = 1.2;  // 끌어당기는 지속 시간(초)
+const UFO_PULL_STRENGTH = 220;  // px/s^2, 살짝 끌어당기는 정도
+
+let ufoTimer = 7.0;
+
+function triggerUFO() {
+  const target = pickActiveBall();
+  if (!target) return;
+  target.ufoPull = UFO_PULL_DURATION;
+  announceSkill(`🛸 UFO가 ${target.name} 공을 끌어당깁니다!`);
+}
+
+function applyUFOPull(b, dt) {
+  if (!b || b.landed) return;
+  if (!(b.ufoPull > 0)) return;
+  const dx = UFO_X - b.x, dy = UFO_Y - b.y;
+  const dist = Math.hypot(dx, dy) || 1;
+  b.vx += (dx / dist) * UFO_PULL_STRENGTH * dt;
+  b.vy += (dy / dist) * UFO_PULL_STRENGTH * dt;
+  b.ufoPull -= dt;
+}
+
+function drawUFO(ts) {
+  const bob = Math.sin(ts / 500) * 4;
+  const x = UFO_X, y = UFO_Y + bob;
+
+  // 끌어당기는 중인 공들에게 빔 표시
+  for (const b of balls) {
+    if (b && !b.landed && b.ufoPull > 0) {
+      const alpha = Math.min(1, b.ufoPull / UFO_PULL_DURATION);
+      const grad = ctx.createLinearGradient(x, y, b.x, b.y);
+      grad.addColorStop(0, `rgba(140,255,190,${alpha * 0.55})`);
+      grad.addColorStop(1, `rgba(140,255,190,0)`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
+
+  ctx.save();
+  ctx.translate(x, y);
+  // 본체
+  ctx.fillStyle = '#8fa3ff';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 22, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#5468c9';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // 조종석 돔
+  ctx.fillStyle = '#cfe8ff';
+  ctx.beginPath();
+  ctx.ellipse(0, -6, 10, 8, 0, Math.PI, 0);
+  ctx.fill();
+  // 깜빡이는 불빛
+  for (let i = -1; i <= 1; i++) {
+    ctx.fillStyle = Math.sin(ts / 150 + i * 2) > 0 ? '#ffe066' : '#ff8f8f';
+    ctx.beginPath();
+    ctx.arc(i * 10, 3, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ===== 플레이어 스킬 (매 게임마다 공 하나당 하나씩 랜덤 배정, 레이스 중 자동 1회 발동) =====
+const SKILLS = [
+  { id: 1, name: '아이스볼트', emoji: '❄️' },
+  { id: 2, name: '자석', emoji: '🧲' },
+  { id: 3, name: '장풍', emoji: '💨' },
+  { id: 4, name: '작아져라', emoji: '🔻' },
+  { id: 5, name: '커져라', emoji: '🔺' }
+];
+
+function pickOpponent(caster) {
+  const candidates = balls.filter(b => b && !b.landed && b.id !== caster.id);
+  if (candidates.length === 0) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function spawnColorBurst(x, y, colors, count, speedMin, speedMax) {
+  count = count || 14;
+  speedMin = speedMin || 40;
+  speedMax = speedMax || 140;
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = speedMin + Math.random() * (speedMax - speedMin);
+    explosionParticles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.35 + Math.random() * 0.25,
+      age: 0,
+      r: 1.5 + Math.random() * 2,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+}
+
+// 1. 아이스볼트: 랜덤 상대를 5초간 얼림 (물리 정지)
+function skillIceBolt(caster) {
+  const target = pickOpponent(caster);
+  if (!target) return;
+  target.frozenTimer = 5;
+  spawnColorBurst(target.x, target.y, ['190,230,255', '255,255,255'], 18, 30, 110);
+  announceSkill(`❄️ ${caster.name}의 아이스볼트! ${target.name} 공이 5초간 얼어붙습니다!`);
+}
+
+// 2. 자석: 랜덤 상대를 3초간 시전자 쪽으로 끌어당김
+function skillMagnet(caster) {
+  const target = pickOpponent(caster);
+  if (!target) return;
+  target.magnetPull = 3;
+  target.magnetSourceId = caster.id;
+  spawnColorBurst(target.x, target.y, ['200,140,255'], 12, 20, 70);
+  announceSkill(`🧲 ${caster.name}의 자석! ${target.name} 공을 3초간 끌어당깁니다!`);
+}
+
+// 3. 장풍: 랜덤 상대를 멀리 밀어냄
+function skillForceBlast(caster) {
+  const target = pickOpponent(caster);
+  if (!target) return;
+  const dx = target.x - caster.x, dy = target.y - caster.y;
+  const dist = Math.hypot(dx, dy) || 1;
+  const force = 650;
+  target.vx += (dx / dist) * force;
+  target.vy += (dy / dist) * force - 100;
+  explosionRings.push({ x: caster.x, y: caster.y, age: 0, life: 0.4, color: '220,240,255' });
+  explosionRings.push({ x: caster.x, y: caster.y, age: 0, life: 0.55, color: '220,240,255' });
+  spawnColorBurst(caster.x, caster.y, ['220,240,255', '255,255,255'], 14, 60, 180);
+  announceSkill(`💨 ${caster.name}의 장풍! ${target.name} 공을 멀리 날려버립니다!`);
+}
+
+// 4. 작아져라: 50% 확률로 랜덤 상대와 시전자 모두 크기 절반으로 축소
+function skillShrink(caster) {
+  const target = pickOpponent(caster);
+  if (!target) return;
+  if (Math.random() < 0.5) {
+    target.radius = Math.max(LIGHT_MIN_RADIUS, target.radius * 0.7);
+    caster.radius = Math.max(LIGHT_MIN_RADIUS, caster.radius * 0.7);
+    spawnColorBurst(target.x, target.y, ['255,90,90'], 12, 20, 80);
+    spawnColorBurst(caster.x, caster.y, ['255,90,90'], 12, 20, 80);
+    announceSkill(`🔻 ${caster.name}의 작아져라! ${target.name}과 본인 모두 작아집니다!`);
+  } else {
+    announceSkill(`🔻 ${caster.name}의 작아져라가 빗나갔습니다...`);
+  }
+}
+
+// 5. 커져라: 45% 확률로 랜덤 상대만 크기 확대
+function skillGrow(caster) {
+  const target = pickOpponent(caster);
+  if (!target) return;
+  if (Math.random() < 0.5) {
+    target.radius = Math.min(LIGHT_MAX_RADIUS, target.radius * 1.4);
+    spawnColorBurst(target.x, target.y, ['255,210,90'], 14, 20, 90);
+    announceSkill(`🔺 ${caster.name}의 커져라! ${target.name} 공이 커집니다!`);
+  } else {
+    announceSkill(`🔺 ${caster.name}의 커져라가 빗나갔습니다...`);
+  }
+}
+
+function useSkill(caster) {
+  if (caster.skill === 1) skillIceBolt(caster);
+  else if (caster.skill === 2) skillMagnet(caster);
+  else if (caster.skill === 3) skillForceBlast(caster);
+  else if (caster.skill === 4) skillShrink(caster);
+  else if (caster.skill === 5) skillGrow(caster);
+}
+
+function applyMagnetPull(b, dt) {
+  if (!b || b.landed) return;
+  if (!(b.magnetPull > 0)) return;
+  const source = balls.find(x => x && x.id === b.magnetSourceId);
+  if (source && !source.landed) {
+    const dx = source.x - b.x, dy = source.y - b.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const strength = 260;
+    b.vx += (dx / dist) * strength * dt;
+    b.vy += (dy / dist) * strength * dt;
+  }
+  b.magnetPull -= dt;
+}
+
+function drawMagnetBeams() {
+  for (const b of balls) {
+    if (b && !b.landed && b.magnetPull > 0) {
+      const source = balls.find(x => x && x.id === b.magnetSourceId);
+      if (source && !source.landed) {
+        const alpha = Math.min(1, b.magnetPull / 3);
+        const grad = ctx.createLinearGradient(source.x, source.y, b.x, b.y);
+        grad.addColorStop(0, `rgba(200,140,255,${alpha * 0.5})`);
+        grad.addColorStop(1, `rgba(200,140,255,0)`);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+// ===== 바람 (8방향) =====
+const WIND_MAX = 160;
+const WIND_FORCE_MULT = 2.2;
+const WIND_MIN_INTERVAL = 0.5;
+const WIND_MAX_INTERVAL = 1.1;
+const WIND_DIR_LABELS = ['오른쪽 →', '오른쪽 아래 ↘', '아래 ↓', '왼쪽 아래 ↙', '왼쪽 ←', '왼쪽 위 ↖', '위 ↑', '오른쪽 위 ↗'];
+const WIND_DIR_ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+
+let windX = 0, windY = 0;
+let windTargetX = 0, windTargetY = 0;
+let windTimer = 0.6;
+
+const windValEl = document.getElementById('windVal');
+const windRowEl = document.getElementById('windRow');
+const windGustEl = document.getElementById('windGust');
+let windGustTimeout = null;
+
+function announceGust(dirIndex, mag) {
+  const strength = mag / WIND_MAX;
+  if (strength < 0.22) return;
+  const desc = strength > 0.7 ? '강한' : strength > 0.45 ? '적당한' : '약한';
+  windGustEl.textContent = `💨 ${desc} 바람이 ${WIND_DIR_LABELS[dirIndex]}으로 붑니다!`;
+  windGustEl.classList.add('show');
+  clearTimeout(windGustTimeout);
+  windGustTimeout = setTimeout(() => windGustEl.classList.remove('show'), 1500);
+}
+
+function updateWind(dt) {
+  windTimer -= dt;
+  if (windTimer <= 0) {
+    windTimer = WIND_MIN_INTERVAL + Math.random() * (WIND_MAX_INTERVAL - WIND_MIN_INTERVAL);
+    const dirIndex = Math.floor(Math.random() * 8);
+    const angle = dirIndex * (Math.PI / 4);
+    const mag = Math.random() * WIND_MAX;
+    windTargetX = Math.cos(angle) * mag;
+    windTargetY = Math.sin(angle) * mag;
+    announceGust(dirIndex, mag);
+  }
+  windX += (windTargetX - windX) * Math.min(1, dt * 2.6);
+  windY += (windTargetY - windY) * Math.min(1, dt * 2.6);
+
+  const mag = Math.hypot(windX, windY);
+  const strength = mag / WIND_MAX;
+  if (strength < 0.08) {
+    windValEl.textContent = '고요';
+    windRowEl.classList.remove('strong');
+  } else {
+    let angle = Math.atan2(windY, windX);
+    if (angle < 0) angle += Math.PI * 2;
+    const dirIndex = Math.round(angle / (Math.PI / 4)) % 8;
+    const bars = '▮'.repeat(Math.max(1, Math.round(strength * 5)));
+    windValEl.textContent = `${WIND_DIR_ARROWS[dirIndex]}  ${bars}`;
+    windRowEl.classList.toggle('strong', strength > 0.6);
+  }
+}
+
+let windParticles = [];
+const MAX_WIND_PARTICLES = 45;
+
+function spawnWindParticles(dt) {
+  const mag = Math.hypot(windX, windY);
+  const strength = mag / WIND_MAX;
+  if (strength < 0.06) return;
+  const spawnChance = strength * 30 * dt;
+  if (Math.random() < spawnChance && windParticles.length < MAX_WIND_PARTICLES) {
+    const dirx = windX / mag, diry = windY / mag;
+    const speed = (160 + Math.random() * 200) * (0.5 + strength);
+    windParticles.push({
+      x: PLAY_LEFT + Math.random() * (PLAY_RIGHT - PLAY_LEFT),
+      y: 16 + Math.random() * (NECK_Y - 30),
+      vx: dirx * speed,
+      vy: diry * speed,
+      len: 14 + Math.random() * 20,
+      alpha: 0.12 + Math.random() * 0.28 * strength
+    });
+  }
+}
+
+function updateWindParticles(dt) {
+  for (let i = windParticles.length - 1; i >= 0; i--) {
+    const p = windParticles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    if (p.x < PLAY_LEFT - 60 || p.x > PLAY_RIGHT + 60 || p.y < -60 || p.y > NECK_Y + 60) {
+      windParticles.splice(i, 1);
+    }
+  }
+}
+
+function drawWindParticles() {
+  ctx.lineWidth = 2;
+  for (const p of windParticles) {
+    const speed = Math.hypot(p.vx, p.vy) || 1;
+    const dirx = p.vx / speed, diry = p.vy / speed;
+    ctx.strokeStyle = `rgba(157, 214, 255, ${p.alpha})`;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x - dirx * p.len, p.y - diry * p.len);
+    ctx.stroke();
+  }
+}
+
+// 스킬 이벤트 공용 알림 텍스트
+const skillBlastEl = document.getElementById('skillBlast');
+let skillBlastTimeout = null;
+function announceSkill(text) {
+  skillBlastEl.textContent = text;
+  skillBlastEl.classList.add('show');
+  clearTimeout(skillBlastTimeout);
+  skillBlastTimeout = setTimeout(() => skillBlastEl.classList.remove('show'), 1400);
+}
+
+function announceBlast() {
+  bombBlastEl.classList.add('show');
+  clearTimeout(bombBlastTimeout);
+  bombBlastTimeout = setTimeout(() => bombBlastEl.classList.remove('show'), 1100);
+}
+
+function spawnWallBurst(x, y) {
+  for (let i = 0; i < 14; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 80 + Math.random() * 200;
+    explosionParticles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.3 + Math.random() * 0.25,
+      age: 0,
+      r: 1.5 + Math.random() * 2,
+      color: Math.random() < 0.5 ? '200,220,255' : '255,255,255'
+    });
+  }
+}
+
+// ⚡ 번개 낙뢰: 7초마다 활성 공 중 하나를 타격해 길에 구멍을 냄
+const LIGHTNING_INTERVAL = 7.0;
+const LIGHTNING_HOLE_WIDTH = 16;
+let lightningTimer = LIGHTNING_INTERVAL;
+let lightningBolt = null;
+
+function spawnSparkParticles(x, y) {
+  for (let i = 0; i < 16; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 100 + Math.random() * 260;
+    explosionParticles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.3 + Math.random() * 0.25,
+      age: 0,
+      r: 1.5 + Math.random() * 2,
+      color: Math.random() < 0.5 ? '255,255,190' : '150,210,255'
+    });
+  }
+}
+
+function triggerLightning() {
+  const target = pickActiveBall();
+  if (!target) return;
+  const tx = target.x, ty = target.y;
+  lightningBolt = { x: tx, endY: ty, age: 0, life: 0.32 };
+
+  let nearestPeg = null, nearestDist = Infinity;
+  for (const p of pegs) {
+    const d = Math.hypot(p.cx - tx, p.cy - ty);
+    if (d < nearestDist) { nearestDist = d; nearestPeg = p; }
+  }
+  if (nearestPeg && nearestDist < 70) carveHoleAtPeg(nearestPeg, tx, LIGHTNING_HOLE_WIDTH);
+
+  target.vx += (Math.random() * 2 - 1) * 300;
+  target.vy -= 260;
+  target.hitCount = Math.min(MAX_DAMAGE_STAGE, (target.hitCount || 0) + 1);
+  target.shape = generateBallShape(target.hitCount);
+
+  spawnSparkParticles(tx, ty);
+  screenShake = Math.max(screenShake, 11);
+  announceSkill(`⚡ 번개가 ${target.name} 공을 공격합니다!`);
+}
+
+function updateLightning(dt) {
+  if (!lightningBolt) return;
+  lightningBolt.age += dt;
+  if (lightningBolt.age >= lightningBolt.life) lightningBolt = null;
+}
+
+function drawLightningBolt() {
+  if (!lightningBolt) return;
+  const t = lightningBolt.age / lightningBolt.life;
+  const alpha = 1 - t;
+  ctx.strokeStyle = `rgba(220,240,255,${alpha})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(lightningBolt.x, 0);
+  const segments = 9;
+  let x = lightningBolt.x;
+  for (let i = 1; i <= segments; i++) {
+    const progress = i / segments;
+    const y = lightningBolt.endY * progress;
+    x = lightningBolt.x + (Math.random() - 0.5) * 16 * (1 - progress * 0.3);
+    ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = `rgba(255,255,255,${alpha * 0.6})`;
+  ctx.beginPath();
+  ctx.arc(lightningBolt.x, lightningBolt.endY, 14 * (1 - t), 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// 🌪️ 회오리: 10초마다 활성 공 중 하나를 랜덤 방향으로 날려보냄
+const TORNADO_INTERVAL = 10.0;
+let tornadoTimer = TORNADO_INTERVAL;
+let tornado = null;
+
+function triggerTornado() {
+  const target = pickActiveBall();
+  if (!target) return;
+  tornado = { x: target.x, y: target.y, age: 0, life: 0.9 };
+  const speed = Math.max(260, Math.hypot(target.vx, target.vy));
+  const angle = Math.random() * Math.PI * 2;
+  target.vx = Math.cos(angle) * speed;
+  target.vy = Math.sin(angle) * speed;
+  screenShake = Math.max(screenShake, 6);
+  announceSkill(`🌪️ 회오리가 ${target.name} 공을 몰아칩니다!`);
+}
+
+function updateTornado(dt) {
+  if (!tornado) return;
+  tornado.age += dt;
+  if (tornado.age >= tornado.life) tornado = null;
+}
+
+function drawTornado() {
+  if (!tornado) return;
+  const t = tornado.age / tornado.life;
+  const alpha = 1 - t;
+  ctx.save();
+  ctx.translate(tornado.x, tornado.y);
+  ctx.rotate(tornado.age * 14);
+  for (let i = 0; i < 3; i++) {
+    const r = 10 + i * 7 + t * 12;
+    ctx.strokeStyle = `rgba(180,220,255,${alpha * (0.6 - i * 0.15)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r, r * 0.4, 0, 0, Math.PI * 1.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ✨ 하늘의 빛: 10초마다 랜덤한 공에게 내려와 40% 확률로 축복(작아짐), 60% 확률로 저주(커짐)
+const LIGHT_INTERVAL = 10.0;
+const LIGHT_MIN_RADIUS = 3;
+const LIGHT_MAX_RADIUS = 40;
+let lightTimer = 6.0;
+let lightBeam = null; // {x, targetY, age, life, blessed}
+
+function triggerLight() {
+  const target = pickActiveBall();
+  if (!target) return;
+  const blessed = Math.random() < 0.4; // 작아질 확률 40%, 커질 확률 60%
+  const factor = blessed ? 0.8 : 1.4; // 축복: 1/5 작아짐, 저주: 2/5 커짐
+  target.radius = Math.max(LIGHT_MIN_RADIUS, Math.min(LIGHT_MAX_RADIUS, target.radius * factor));
+  lightBeam = { x: target.x, targetY: target.y, age: 0, life: 0.5, blessed };
+  screenShake = Math.max(screenShake, blessed ? 3 : 6);
+  if (blessed) {
+    announceSkill(`✨ 하늘의 빛이 ${target.name} 공을 축복해 작아집니다!`);
+  } else {
+    announceSkill(`☀️ 하늘의 빛이 ${target.name} 공을 짓눌러 커집니다!`);
+  }
+}
+
+function updateLight(dt) {
+  if (!lightBeam) return;
+  lightBeam.age += dt;
+  if (lightBeam.age >= lightBeam.life) lightBeam = null;
+}
+
+function drawLightBeam() {
+  if (!lightBeam) return;
+  const t = lightBeam.age / lightBeam.life;
+  const alpha = 1 - t;
+  const color = lightBeam.blessed ? '255,240,150' : '200,120,255';
+  const grad = ctx.createLinearGradient(lightBeam.x, 0, lightBeam.x, lightBeam.targetY);
+  grad.addColorStop(0, `rgba(${color},0)`);
+  grad.addColorStop(1, `rgba(${color},${alpha * 0.8})`);
+  ctx.fillStyle = grad;
+  const beamWidth = 22;
+  ctx.beginPath();
+  ctx.moveTo(lightBeam.x - beamWidth / 2, 0);
+  ctx.lineTo(lightBeam.x + beamWidth / 2, 0);
+  ctx.lineTo(lightBeam.x + beamWidth / 4, lightBeam.targetY);
+  ctx.lineTo(lightBeam.x - beamWidth / 4, lightBeam.targetY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = `rgba(${color},${alpha * 0.6})`;
+  ctx.beginPath();
+  ctx.arc(lightBeam.x, lightBeam.targetY, 16 * (1 - t) + 6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// 🚀 45초: 바닥에서 미사일 10발이 발사되어 맞으면 위로 튕겨나감
+const MISSILE_COUNT = 10;
+const MISSILE_SPEED = 320;
+const MISSILE_KNOCKBACK = 480; // 일정 거리 위로 튕겨나가는 힘
+let missiles = [];
+let event45Fired = false;
+
+function triggerMissiles() {
+  missiles = [];
+  for (let i = 0; i < MISSILE_COUNT; i++) {
+    const x = NECK_LEFT + Math.random() * (NECK_RIGHT - NECK_LEFT);
+    missiles.push({ x, y: H - 20, vy: -MISSILE_SPEED });
+  }
+  announceSkill('🚀 바닥에서 미사일 10발이 발사됩니다!');
+}
+
+function updateMissiles(dt) {
+  for (let i = missiles.length - 1; i >= 0; i--) {
+    const m = missiles[i];
+    m.y += m.vy * dt;
+    if (m.y < -20) { missiles.splice(i, 1); continue; }
+    let hit = false;
+    for (const b of balls) {
+      if (!b || b.landed) continue;
+      const dx = b.x - m.x, dy = b.y - m.y;
+      if (Math.hypot(dx, dy) < b.radius + 4) {
+        b.vy -= MISSILE_KNOCKBACK;
+        b.vx += (Math.random() - 0.5) * 160;
+        spawnSparkParticles(m.x, m.y);
+        hit = true;
+        break;
+      }
+    }
+    if (hit) missiles.splice(i, 1);
+  }
+}
+
+function drawMissiles() {
+  for (const m of missiles) {
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.fillStyle = 'rgba(255,180,80,0.6)';
+    ctx.beginPath();
+    ctx.moveTo(-2, 5); ctx.lineTo(2, 5); ctx.lineTo(0, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ff6b4a';
+    ctx.beginPath();
+    ctx.moveTo(0, -8); ctx.lineTo(3, 5); ctx.lineTo(-3, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// 🟣 60초: 하늘 전체에서 보라색 빛이 내려와 모든 공의 크기가 절반으로 줄어듦
+let globalShrinkFlash = null;
+let event60Fired = false;
+
+function triggerGlobalShrink() {
+  for (const b of balls) {
+    if (b && !b.landed) {
+      b.radius = Math.max(LIGHT_MIN_RADIUS, b.radius * 0.5);
+    }
+  }
+  globalShrinkFlash = { age: 0, life: 1.0 };
+  screenShake = Math.max(screenShake, 8);
+  announceSkill('🟣 보라빛이 하늘 전체에서 내려와 모든 공이 절반으로 작아집니다!');
+}
+
+function updateGlobalShrinkFlash(dt) {
+  if (!globalShrinkFlash) return;
+  globalShrinkFlash.age += dt;
+  if (globalShrinkFlash.age >= globalShrinkFlash.life) globalShrinkFlash = null;
+}
+
+function drawGlobalShrinkFlash() {
+  if (!globalShrinkFlash) return;
+  const t = globalShrinkFlash.age / globalShrinkFlash.life;
+  const alpha = (1 - t) * 0.35;
+  ctx.fillStyle = `rgba(180,100,255,${alpha})`;
+  ctx.fillRect(0, 0, W, H);
+  const beams = 6;
+  for (let i = 0; i < beams; i++) {
+    const x = PLAY_LEFT + (i + 0.5) * (PLAY_RIGHT - PLAY_LEFT) / beams;
+    ctx.fillStyle = `rgba(200,140,255,${(1 - t) * 0.25})`;
+    ctx.fillRect(x - 8, 0, 16, H);
+  }
+}
+
+// ===== 결과 / 리더보드 =====
+const timerEl = document.getElementById('timer');
+const statusEl = document.getElementById('status');
+const resultEl = document.getElementById('result');
+const leaderboardEl = document.getElementById('leaderboard');
+const dropBtn = document.getElementById('dropBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+function renderLeaderboard() {
+  leaderboardEl.innerHTML = '';
+  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+  finishOrder.forEach((entry, i) => {
+    const row = document.createElement('div');
+    row.className = 'rankRow';
+    row.innerHTML = `
+      <span class="rankNum">${medals[i] || (i + 1)}</span>
+      <span class="rankDot" style="background:${entry.color}"></span>
+      <span class="rankName">${entry.name}</span>
+      <span class="rankTime">${entry.time.toFixed(2)}s</span>
+    `;
+    leaderboardEl.appendChild(row);
+  });
+}
+
+let wallFlash = 0;
+let ceilingFlash = 0;
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const clickX = (e.clientX - rect.left) * scaleX;
+  dropX = Math.min(PLAY_RIGHT - 40, Math.max(PLAY_LEFT + 40, clickX));
+  draw();
+});
+
+dropBtn.addEventListener('click', () => {
+  if (balls.length === 0 || balls.every(b => b.landed)) startDrop();
+});
+
+function resetGame() {
+  // 보드(장애물) 새로 생성
+  pegs = buildPegs();
+
+  // 공/레이스 상태 초기화
+  balls = [];
+  finishOrder = [];
+  dropStartTime = null;
+  dropX = CENTER_X;
+
+  // 폭탄 초기화 + 맵 전체에 다시 시딩
+  bombs = [];
+  seedInitialBombs();
+
+  // 이벤트 캐릭터/타이머 초기화
+  walkers = [];
+  walkerTimer = 3.0;
+  healer = null;
+  healerTimer = 4.0;
+  mole = null;
+  moleTimer = 2.0;
+  windmillMole = null;
+  windmillMoleTimer = 5.0;
+  beaver = null;
+  beaverTimer = 6.0;
+  lightningBolt = null;
+  lightningTimer = LIGHTNING_INTERVAL;
+  tornado = null;
+  tornadoTimer = TORNADO_INTERVAL;
+  lightBeam = null;
+  lightTimer = 6.0;
+  ufoTimer = 7.0;
+  windmillAngle = 0;
+  event45Fired = false;
+  event60Fired = false;
+  missiles = [];
+  globalShrinkFlash = null;
+  gameEnded = false;
+
+  // 바람 초기화
+  windX = 0; windY = 0;
+  windTargetX = 0; windTargetY = 0;
+  windTimer = 0.6;
+  windValEl.textContent = '고요';
+  windRowEl.classList.remove('strong');
+
+  // 이펙트/화면 흔들림 초기화
+  explosionParticles = [];
+  explosionRings = [];
+  windParticles = [];
+  screenShake = 0;
+  wallFlash = 0;
+  ceilingFlash = 0;
+
+  // UI 초기화
+  renderLeaderboard();
+  resultEl.textContent = '';
+  statusEl.textContent = '대기 중';
+  timerEl.textContent = '0.0';
+  dropBtn.disabled = false;
+
+  draw();
+}
+
+resetBtn.addEventListener('click', resetGame);
+
+function startDrop() {
+  const n = getPlayerCount();
+  BALL_INFO = generateBallInfo(n);
+  renderLegend();
+
+  balls = [];
+  finishOrder = [];
+  renderLeaderboard();
+
+  event45Fired = false;
+  event60Fired = false;
+  missiles = [];
+  globalShrinkFlash = null;
+  gameEnded = false;
+
+  const usableLeft = PLAY_LEFT + 40, usableRight = PLAY_RIGHT - 40;
+  const usableWidth = usableRight - usableLeft;
+  const spacing = 20;
+  const maxPerRow = Math.max(1, Math.floor(usableWidth / spacing));
+
+  dropStartTime = performance.now();
+  for (let i = 0; i < n; i++) {
+    const row = Math.floor(i / maxPerRow);
+    const col = i % maxPerRow;
+    const rowCount = Math.min(maxPerRow, n - row * maxPerRow);
+    const rowWidth = (rowCount - 1) * spacing;
+    const startX = dropX - rowWidth / 2;
+    let bx = startX + col * spacing;
+    bx = Math.min(usableRight, Math.max(usableLeft, bx));
+    const by = 30 + row * 20;
+    balls.push({
+      id: i,
+      name: BALL_INFO[i].name,
+      color: BALL_INFO[i].color,
+      x: bx, y: by,
+      vx: (Math.random() - 0.5) * 40, vy: 0,
+      landed: false, recorded: false,
+      hitCount: 0, rotation: 0, shape: generateBallShape(0),
+      collisionCooldown: 0,
+      radius: BALL_RADIUS,
+      ufoPull: 0,
+      skill: 1 + Math.floor(Math.random() * 5),
+      skillTimer: Math.random() * 10,
+      frozenTimer: 0,
+      magnetPull: 0,
+      magnetSourceId: null
+    });
+  }
+  resultEl.textContent = '';
+  statusEl.textContent = '낙하 중...';
+  dropBtn.disabled = true;
+}
+
+function physicsStep(b, dt) {
+  if (!b || b.landed) return;
+
+  if (b.frozenTimer > 0) {
+    b.frozenTimer -= dt;
+    return; // 얼어있는 동안은 완전히 물리 정지
+  }
+
+  if (b.collisionCooldown > 0) b.collisionCooldown -= dt;
+
+  b.vy += GRAVITY * dt;
+  b.vx *= AIR_DAMPING;
+  b.vy = Math.min(b.vy, MAX_SPEED);
+  b.x += b.vx * dt;
+  b.y += b.vy * dt;
+
+  const bounds = funnelBounds(b.y);
+  const WALL_BURST_THRESHOLD = 220;
+  if (b.x - b.radius < bounds.left) {
+    const impactSpeed = Math.abs(b.vx);
+    b.x = bounds.left + b.radius;
+    b.vx = Math.max(impactSpeed * WALL_RESTITUTION, 60);
+    wallFlash = 1;
+    if (impactSpeed > WALL_BURST_THRESHOLD) {
+      spawnWallBurst(bounds.left, b.y);
+      screenShake = Math.max(screenShake, Math.min(10, impactSpeed / 40));
+      wallFlash = 1.4;
+    }
+  } else if (b.x + b.radius > bounds.right) {
+    const impactSpeed = Math.abs(b.vx);
+    b.x = bounds.right - b.radius;
+    b.vx = -Math.max(impactSpeed * WALL_RESTITUTION, 60);
+    wallFlash = 1;
+    if (impactSpeed > WALL_BURST_THRESHOLD) {
+      spawnWallBurst(bounds.right, b.y);
+      screenShake = Math.max(screenShake, Math.min(10, impactSpeed / 40));
+      wallFlash = 1.4;
+    }
+  }
+
+  if (b.y - b.radius < CEILING_Y) {
+    b.y = CEILING_Y + b.radius;
+    if (b.vy < 0) b.vy = Math.max(Math.abs(b.vy) * WALL_RESTITUTION, 40);
+    ceilingFlash = 1;
+  }
+
+  for (const p of pegs) {
+    const col = circleBarCollision(b.x, b.y, b.radius, p.cx, p.cy, p.halfW, p.halfH);
+    if (col) {
+      b.x += col.nx * col.pen;
+      b.y += col.ny * col.pen;
+      const dot = b.vx * col.nx + b.vy * col.ny;
+      if (dot < 0) {
+        const impulse = (1 + RESTITUTION) * dot;
+        b.vx -= impulse * col.nx;
+        b.vy -= impulse * col.ny;
+        b.vx += (Math.random() - 0.5) * 90;
+      }
+    }
+  }
+
+  b.vx += windX * WIND_FORCE_MULT * dt;
+  b.vy += windY * WIND_FORCE_MULT * dt;
+
+  applyUFOPull(b, dt);
+  applyMagnetPull(b, dt);
+
+  for (let i = bombs.length - 1; i >= 0; i--) {
+    const bomb = bombs[i];
+    const dx = b.x - bomb.x, dy = b.y - bomb.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < b.radius + BOMB_CAP_R) {
+      let nx, ny;
+      if (dist < 0.001) { const a = Math.random() * Math.PI * 2; nx = Math.cos(a); ny = Math.sin(a); }
+      else { nx = dx / dist; ny = dy / dist; }
+      b.vx = nx * EXPLOSION_FORCE + (Math.random() - 0.5) * 140;
+      b.vy = ny * EXPLOSION_FORCE - 180;
+      b.hitCount = Math.min(MAX_DAMAGE_STAGE, (b.hitCount || 0) + 1);
+      b.shape = generateBallShape(b.hitCount);
+      triggerExplosionMotion(bomb.x, bomb.y);
+      carveHoleAtPeg(bomb.peg, bomb.x);
+      announceBlast();
+      bombs.splice(i, 1);
+    }
+  }
+
+  resolveWindmillCollision(b);
+
+  const hits = b.hitCount || 0;
+  b.rotation = (b.rotation || 0) + (b.vx / b.radius) * dt * (1 + hits * 0.3);
+
+  if (b.y + b.radius >= H - 4) {
+    b.y = H - 4 - b.radius;
+    b.landed = true;
+  }
+}
+
+function resolveBallCollisions() {
+  for (let i = 0; i < balls.length; i++) {
+    const a = balls[i];
+    if (!a || a.landed) continue;
+    for (let j = i + 1; j < balls.length; j++) {
+      const b = balls[j];
+      if (!b || b.landed) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const minDist = a.radius + b.radius;
+      if (dist < minDist && dist > 0.001) {
+        const nx = dx / dist, ny = dy / dist;
+        const pen = minDist - dist;
+        a.x -= nx * pen / 2; a.y -= ny * pen / 2;
+        b.x += nx * pen / 2; b.y += ny * pen / 2;
+        const relVel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (relVel < 0) {
+          const impulse = -(1.5) * relVel / 2;
+          a.vx -= impulse * nx; a.vy -= impulse * ny;
+          b.vx += impulse * nx; b.vy += impulse * ny;
+        }
+        // 공끼리 부딪히면 데미지 (연속 접촉 시 과도한 누적 방지를 위해 쿨다운 적용)
+        if (relVel < -30) {
+          if ((a.collisionCooldown || 0) <= 0) {
+            a.hitCount = Math.min(MAX_DAMAGE_STAGE, (a.hitCount || 0) + 1);
+            a.shape = generateBallShape(a.hitCount);
+            a.collisionCooldown = 0.4;
+          }
+          if ((b.collisionCooldown || 0) <= 0) {
+            b.hitCount = Math.min(MAX_DAMAGE_STAGE, (b.hitCount || 0) + 1);
+            b.shape = generateBallShape(b.hitCount);
+            b.collisionCooldown = 0.4;
+          }
+        }
+      }
+    }
+  }
+}
+
+function drawBallShape(b) {
+  const hits = b.hitCount || 0;
+  const shape = b.shape || { sides: 10, variance: null };
+  const t = Math.min(1, hits / MAX_DAMAGE_STAGE);
+
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.rotate(b.rotation || 0);
+
+  ctx.beginPath();
+  if (hits === 0 || !shape.variance) {
+    ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+  } else {
+    for (let i = 0; i < shape.sides; i++) {
+      const angle = (i / shape.sides) * Math.PI * 2;
+      const r = b.radius * shape.variance[i];
+      const px = Math.cos(angle) * r;
+      const py = Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+  ctx.fillStyle = b.color;
+  ctx.fill();
+  if (t > 0) {
+    ctx.fillStyle = `rgba(200,40,40,${t * 0.5})`;
+    ctx.fill();
+  }
+  ctx.strokeStyle = hits > 0 ? '#ff5a3c' : 'rgba(255,255,255,0.6)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+
+  // 얼음 상태 오버레이
+  if (b.frozenTimer > 0) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius + 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(180,230,255,0.45)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + b.id;
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(b.x + Math.cos(a) * (b.radius + 2), b.y + Math.sin(a) * (b.radius + 2));
+      ctx.stroke();
+    }
+  }
+
+  // 작은 플레이어 이름 + 스킬 아이콘 라벨 (공 회전과 무관하게 항상 똑바로 표시)
+  const skillInfo = SKILLS[(b.skill || 1) - 1];
+  const label = skillInfo ? `${b.name} ${skillInfo.emoji}` : b.name;
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = 2;
+  const labelY = b.y - b.radius - 5;
+  ctx.strokeText(label, b.x, labelY);
+  ctx.fillText(label, b.x, labelY);
+}
+
+function draw(ts) {
+  ts = ts || performance.now();
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.save();
+  if (screenShake > 0.1) {
+    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+  }
+
+  ctx.fillStyle = '#10132a';
+  ctx.fillRect(0, 0, W, H);
+
+  drawWindParticles();
+
+  // 좌우 깔때기 벽 (항상 표시, 부딪히면 잠깐 밝아짐)
+  ctx.strokeStyle = `rgba(157, 214, 255, ${0.35 + wallFlash * 0.65})`;
+  ctx.lineWidth = wallFlash > 0.05 ? 4 : 2;
+  ctx.beginPath();
+  ctx.moveTo(PLAY_LEFT, 0);
+  ctx.lineTo(NECK_LEFT, NECK_Y);
+  ctx.lineTo(NECK_LEFT, H);
+  ctx.moveTo(PLAY_RIGHT, 0);
+  ctx.lineTo(NECK_RIGHT, NECK_Y);
+  ctx.lineTo(NECK_RIGHT, H);
+  ctx.stroke();
+  if (wallFlash > 0) wallFlash = Math.max(0, wallFlash - 0.08);
+
+  // 맨 위 천장
+  ctx.strokeStyle = `rgba(157, 214, 255, ${0.35 + ceilingFlash * 0.65})`;
+  ctx.lineWidth = ceilingFlash > 0.05 ? 4 : 2;
+  ctx.beginPath();
+  ctx.moveTo(PLAY_LEFT, CEILING_Y);
+  ctx.lineTo(PLAY_RIGHT, CEILING_Y);
+  ctx.stroke();
+  if (ceilingFlash > 0) ceilingFlash = Math.max(0, ceilingFlash - 0.08);
+
+  // pegs
+  ctx.fillStyle = '#8fa3ff';
+  for (const p of pegs) {
+    ctx.beginPath();
+    ctx.roundRect(p.cx - p.halfW, p.cy - p.halfH, p.halfW * 2, p.halfH * 2, Math.min(p.halfH, 5));
+    ctx.fill();
+  }
+
+  drawBombs(ts);
+  drawWalker();
+  drawHealer();
+  drawMole(mole);
+  drawMole(windmillMole);
+  drawBeaver();
+  drawWindmill();
+  drawUFO(ts);
+  drawMagnetBeams();
+  drawExplosionRings();
+  drawExplosionParticles();
+  drawLightningBolt();
+  drawTornado();
+  drawLightBeam();
+  drawMissiles();
+
+  // 결승선
+  ctx.strokeStyle = '#4b5486';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(NECK_LEFT, H - 4);
+  ctx.lineTo(NECK_RIGHT, H - 4);
+  ctx.stroke();
+  ctx.fillStyle = '#7a83ad';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('FINISH', CENTER_X, H - 8);
+
+  // 공들
+  if (balls.length > 0) {
+    for (const b of balls) {
+      if (b) drawBallShape(b);
+    }
+  } else {
+    const n = BALL_INFO.length;
+    const usableLeft = PLAY_LEFT + 40, usableRight = PLAY_RIGHT - 40;
+    const usableWidth = usableRight - usableLeft;
+    const spacing = 20;
+    const maxPerRow = Math.max(1, Math.floor(usableWidth / spacing));
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < n; i++) {
+      const row = Math.floor(i / maxPerRow);
+      const col = i % maxPerRow;
+      const rowCount = Math.min(maxPerRow, n - row * maxPerRow);
+      const rowWidth = (rowCount - 1) * spacing;
+      const startX = dropX - rowWidth / 2;
+      let bx = startX + col * spacing;
+      bx = Math.min(usableRight, Math.max(usableLeft, bx));
+      const by = 30 + row * 20;
+      ctx.fillStyle = BALL_INFO[i].color;
+      ctx.beginPath();
+      ctx.arc(bx, by, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawGlobalShrinkFlash();
+
+  ctx.restore();
+}
+
+function loop(ts) {
+  if (lastTs === null) lastTs = ts;
+  const dt = Math.min(0.032, (ts - lastTs) / 1000);
+  lastTs = ts;
+
+  updateWind(dt);
+  spawnWindParticles(dt);
+  updateWindParticles(dt);
+  updateExplosionParticles(dt);
+  updateExplosionRings(dt);
+
+  if (!gameEnded) {
+    walkerTimer -= dt;
+    if (walkerTimer <= 0) {
+      walkerTimer = WALKER_INTERVAL;
+      if (walkers.length < MAX_WALKERS && bombs.length < MAX_BOMBS) startWalker();
+    }
+    updateWalker(dt);
+
+    healerTimer -= dt;
+    if (healerTimer <= 0) {
+      healerTimer = HEAL_INTERVAL;
+      if (!healer) startHealer();
+    }
+    updateHealer(dt);
+
+    moleTimer -= dt;
+    if (moleTimer <= 0) {
+      moleTimer = MOLE_INTERVAL;
+      if (!mole) startMole();
+    }
+    updateMole(dt);
+
+    windmillMoleTimer -= dt;
+    if (windmillMoleTimer <= 0) {
+      windmillMoleTimer = WINDMILL_MOLE_INTERVAL;
+      if (!windmillMole) startWindmillMole();
+    }
+    updateWindmillMole(dt);
+
+    beaverTimer -= dt;
+    if (beaverTimer <= 0) {
+      beaverTimer = BEAVER_INTERVAL;
+      if (!beaver) startBeaver();
+    }
+    updateBeaver(dt);
+
+    lightningTimer -= dt;
+    if (lightningTimer <= 0) {
+      lightningTimer = LIGHTNING_INTERVAL;
+      triggerLightning();
+    }
+    updateLightning(dt);
+
+    tornadoTimer -= dt;
+    if (tornadoTimer <= 0) {
+      tornadoTimer = TORNADO_INTERVAL;
+      triggerTornado();
+    }
+    updateTornado(dt);
+    updateWindmill(dt);
+
+    lightTimer -= dt;
+    if (lightTimer <= 0) {
+      lightTimer = LIGHT_INTERVAL;
+      triggerLight();
+    }
+    updateLight(dt);
+
+    ufoTimer -= dt;
+    if (ufoTimer <= 0) {
+      ufoTimer = UFO_INTERVAL;
+      triggerUFO();
+    }
+
+    if (dropStartTime) {
+      const raceElapsed = (ts - dropStartTime) / 1000;
+      if (!event45Fired && raceElapsed >= 45) {
+        triggerMissiles();
+        event45Fired = true;
+      }
+      if (!event60Fired && raceElapsed >= 60) {
+        triggerGlobalShrink();
+        event60Fired = true;
+      }
+    }
+    updateMissiles(dt);
+    updateGlobalShrinkFlash(dt);
+
+    const SKILL_INTERVAL = 10.0;
+    for (const b of balls) {
+      if (!b || b.landed) continue;
+      b.skillTimer -= dt;
+      if (b.skillTimer <= 0) {
+        b.skillTimer += SKILL_INTERVAL;
+        useSkill(b);
+      }
+    }
+  }
+
+  const anyActive = balls.length > 0 && balls.some(b => b && !b.landed);
+  if (anyActive) {
+    const elapsed = (ts - dropStartTime) / 1000;
+    timerEl.textContent = elapsed.toFixed(1);
+
+    const substeps = 4;
+    for (let i = 0; i < substeps; i++) {
+      for (const b of balls) physicsStep(b, dt / substeps);
+      resolveBallCollisions();
+    }
+
+    for (const b of balls) {
+      if (b && b.landed && !b.recorded) {
+        b.recorded = true;
+        const t = (ts - dropStartTime) / 1000;
+        finishOrder.push({ name: b.name, color: b.color, time: t });
+        renderLeaderboard();
+      }
+    }
+
+    if (balls.every(b => b.landed) && !gameEnded) {
+      gameEnded = true;
+      statusEl.textContent = '🏁 게임 종료';
+      resultEl.textContent = `🏁 전원 도착! 1위: ${finishOrder[0].name}`;
+      dropBtn.disabled = false;
+      // 남아있는 위협 요소 정리
+      missiles = [];
+      walkers = [];
+      healer = null;
+      mole = null;
+      windmillMole = null;
+      beaver = null;
+      lightningBolt = null;
+      tornado = null;
+      lightBeam = null;
+      globalShrinkFlash = null;
+    }
+  }
+
+  draw(ts);
+  animId = requestAnimationFrame(loop);
+}
+
+animId = requestAnimationFrame(loop);
+draw();
+</script>
+</body>
+</html>
