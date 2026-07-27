@@ -150,28 +150,28 @@
   }
   #bigAnnounce {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.7);
-    background: rgba(10, 12, 26, 0.88);
-    border: 2px solid rgba(255,214,107,0.6);
-    border-radius: 18px;
-    padding: 18px 28px;
-    font-size: 22px;
+    left: 14px;
+    bottom: 14px;
+    transform: translateY(14px) scale(0.85);
+    background: rgba(10, 12, 26, 0.85);
+    border: 2px solid rgba(255,214,107,0.55);
+    border-radius: 14px;
+    padding: 9px 16px;
+    font-size: 14px;
     font-weight: 800;
-    text-align: center;
+    text-align: left;
     color: #ffe9b0;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     white-space: nowrap;
     z-index: 10;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.45);
   }
   #bigAnnounce.show {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
   }
   button {
     background: linear-gradient(180deg, #6c8bff, #4a63e0);
@@ -522,9 +522,12 @@ const SHIBA_Y = H * 0.63;
 const SHIBA_R = 38;
 function drawShiba(ts) {
   const bob = Math.sin(ts / 900) * 3;
+  const animT = Math.max(0, Math.min(1, (dogeFireAnim || 0) / DOGE_FIRE_ANIM_DURATION));
   ctx.save();
   ctx.globalAlpha = 0.85;
   ctx.translate(SHIBA_X, SHIBA_Y + bob);
+  const puff = 1 + 0.07 * animT; // 불 뿜을 때 살짝 부풀어오르는 모션
+  ctx.scale(puff, puff);
 
   // 귀 (바깥쪽)
   ctx.fillStyle = '#c98a4b';
@@ -567,14 +570,25 @@ function drawShiba(ts) {
   ctx.ellipse(0, SHIBA_R * 0.25, SHIBA_R * 0.72, SHIBA_R * 0.6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // 눈
-  ctx.fillStyle = '#2a1c10';
+  // 눈 (불 뿜을 때는 사납게 이글거리는 눈으로 변함)
+  if (animT > 0.03) {
+    ctx.shadowColor = 'rgba(255,120,30,0.9)';
+    ctx.shadowBlur = 9 * animT;
+  }
+  const eyeR = Math.round(42 + (255 - 42) * animT);
+  const eyeG = Math.round(28 + (100 - 28) * animT);
+  const eyeB = Math.round(16 + (20 - 16) * animT);
+  ctx.fillStyle = `rgb(${eyeR},${eyeG},${eyeB})`;
+  const eyeRy = SHIBA_R * (0.12 - 0.06 * animT);   // 가늘어짐
+  const eyeRx = SHIBA_R * (0.09 + 0.06 * animT);   // 옆으로 길어짐
+  const eyeTilt = 0.4 * animT;                     // 사나운 각도
   ctx.beginPath();
-  ctx.ellipse(-SHIBA_R * 0.32, -SHIBA_R * 0.08, SHIBA_R * 0.09, SHIBA_R * 0.12, 0, 0, Math.PI * 2);
+  ctx.ellipse(-SHIBA_R * 0.32, -SHIBA_R * 0.08, eyeRx, eyeRy, -eyeTilt, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(SHIBA_R * 0.32, -SHIBA_R * 0.08, SHIBA_R * 0.09, SHIBA_R * 0.12, 0, 0, Math.PI * 2);
+  ctx.ellipse(SHIBA_R * 0.32, -SHIBA_R * 0.08, eyeRx, eyeRy, eyeTilt, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowBlur = 0;
 
   // 코
   ctx.fillStyle = '#241812';
@@ -582,17 +596,47 @@ function drawShiba(ts) {
   ctx.ellipse(0, SHIBA_R * 0.22, SHIBA_R * 0.11, SHIBA_R * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // 입
-  ctx.strokeStyle = '#7a4a26';
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(0, SHIBA_R * 0.3);
-  ctx.quadraticCurveTo(-SHIBA_R * 0.18, SHIBA_R * 0.48, -SHIBA_R * 0.05, SHIBA_R * 0.42);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(0, SHIBA_R * 0.3);
-  ctx.quadraticCurveTo(SHIBA_R * 0.18, SHIBA_R * 0.48, SHIBA_R * 0.05, SHIBA_R * 0.42);
-  ctx.stroke();
+  // 입 (평소엔 미소, 불 뿜을 땐 크게 벌어지며 송곳니+이글거리는 불빛이 보임)
+  if (animT > 0.03) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(55,10,5,0.92)';
+    ctx.beginPath();
+    ctx.ellipse(0, SHIBA_R * 0.34, SHIBA_R * (0.15 + 0.1 * animT), SHIBA_R * (0.1 + 0.3 * animT), 0, 0, Math.PI * 2);
+    ctx.fill();
+    const innerGlow = ctx.createRadialGradient(0, SHIBA_R * 0.34, 0, 0, SHIBA_R * 0.34, SHIBA_R * 0.32 * animT + 1);
+    innerGlow.addColorStop(0, `rgba(255,210,120,${0.9 * animT})`);
+    innerGlow.addColorStop(1, 'rgba(255,90,20,0)');
+    ctx.fillStyle = innerGlow;
+    ctx.beginPath();
+    ctx.ellipse(0, SHIBA_R * 0.34, SHIBA_R * (0.13 + 0.08 * animT), SHIBA_R * (0.08 + 0.24 * animT), 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 송곳니
+    ctx.fillStyle = '#fff8ec';
+    ctx.beginPath();
+    ctx.moveTo(-SHIBA_R * 0.13, SHIBA_R * 0.28);
+    ctx.lineTo(-SHIBA_R * 0.17, SHIBA_R * 0.28 + SHIBA_R * 0.15 * animT);
+    ctx.lineTo(-SHIBA_R * 0.08, SHIBA_R * 0.28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(SHIBA_R * 0.13, SHIBA_R * 0.28);
+    ctx.lineTo(SHIBA_R * 0.17, SHIBA_R * 0.28 + SHIBA_R * 0.15 * animT);
+    ctx.lineTo(SHIBA_R * 0.08, SHIBA_R * 0.28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  } else {
+    ctx.strokeStyle = '#7a4a26';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, SHIBA_R * 0.3);
+    ctx.quadraticCurveTo(-SHIBA_R * 0.18, SHIBA_R * 0.48, -SHIBA_R * 0.05, SHIBA_R * 0.42);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, SHIBA_R * 0.3);
+    ctx.quadraticCurveTo(SHIBA_R * 0.18, SHIBA_R * 0.48, SHIBA_R * 0.05, SHIBA_R * 0.42);
+    ctx.stroke();
+  }
 
   // 볼터치
   ctx.fillStyle = 'rgba(255,140,140,0.35)';
@@ -612,7 +656,9 @@ const BURN_DURATION = 6.0;
 const BURN_SHRINK_RATE = 1.1; // px/s
 const BURN_MIN_RADIUS = 4;
 const FIREBALL_SPEED = 300; // px/s
+const DOGE_FIRE_ANIM_DURATION = 0.9; // 불 뿜을 때 표정 변화 지속 시간
 let dogeFireTimer = 5.0;
+let dogeFireAnim = 0;
 let dogeFireball = null; // { x, y, targetId, life, trail:[] }
 
 function triggerDogeFire() {
@@ -621,6 +667,7 @@ function triggerDogeFire() {
   const mouthX = SHIBA_X;
   const mouthY = SHIBA_Y + SHIBA_R * 0.35;
   dogeFireball = { x: mouthX, y: mouthY, targetId: target.id, life: 3.5, trail: [] };
+  dogeFireAnim = DOGE_FIRE_ANIM_DURATION;
   announceSkill(`🔥 도지가 ${target.name} 공을 향해 파이어볼을 날렸습니다!`);
 }
 
@@ -2463,6 +2510,7 @@ function resetGame() {
   lightTimer = 6.0;
   ufoTimer = 7.0;
   dogeFireTimer = 5.0;
+  dogeFireAnim = 0;
   dogeFireball = null;
   windmills.forEach((wm, i) => {
     wm.angle = windmillBaseAngles[i];
@@ -2981,6 +3029,7 @@ function loop(ts) {
       triggerDogeFire();
     }
     updateDogeFireball(dt);
+    if (dogeFireAnim > 0) dogeFireAnim -= dt;
 
     lightTimer -= dt;
     if (lightTimer <= 0) {
