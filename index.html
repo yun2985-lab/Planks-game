@@ -8,7 +8,12 @@
   body {
     margin: 0;
     min-height: 100vh;
-    background: radial-gradient(circle at 50% 0%, #1e2749 0%, #0b0e1f 70%);
+    background:
+      radial-gradient(circle at 12% 15%, rgba(130,100,255,0.20), transparent 38%),
+      radial-gradient(circle at 88% 10%, rgba(90,180,255,0.16), transparent 42%),
+      radial-gradient(circle at 50% 92%, rgba(255,160,100,0.09), transparent 48%),
+      radial-gradient(ellipse at 50% -10%, #212b56 0%, #12162c 45%, #08090f 100%);
+    background-attachment: fixed;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -31,15 +36,17 @@
   }
   #board-wrap {
     position: relative;
-    border-radius: 16px;
-    padding: 10px;
-    background: linear-gradient(160deg, #232a52, #141833);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+    border-radius: 20px;
+    padding: 12px;
+    background: linear-gradient(155deg, #262d58 0%, #181c37 55%, #10132a 100%);
+    border: 2px solid rgba(157,214,255,0.35);
+    box-shadow: 0 18px 44px rgba(0,0,0,0.55), 0 0 28px rgba(110,140,255,0.12), inset 0 0 0 1px rgba(255,255,255,0.06);
   }
   canvas {
     display: block;
-    border-radius: 10px;
-    background: #10132a;
+    border-radius: 13px;
+    background: #0d1024;
+    box-shadow: inset 0 0 0 2px rgba(157,214,255,0.22), inset 0 0 30px rgba(0,0,0,0.35);
   }
   #hud {
     display: flex;
@@ -134,6 +141,31 @@
   #skillBlast.show {
     opacity: 1;
     transform: translateX(-50%) scale(1);
+  }
+  #bigAnnounce {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    background: rgba(10, 12, 26, 0.88);
+    border: 2px solid rgba(255,214,107,0.6);
+    border-radius: 18px;
+    padding: 18px 28px;
+    font-size: 22px;
+    font-weight: 800;
+    text-align: center;
+    color: #ffe9b0;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #bigAnnounce.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
   button {
     background: linear-gradient(180deg, #6c8bff, #4a63e0);
@@ -276,10 +308,11 @@
   <div id="windRow">💨 바람: <span id="windVal">고요</span></div>
 
   <div id="board-wrap">
-    <canvas id="board" width="460" height="1425"></canvas>
+    <canvas id="board" width="460" height="640"></canvas>
     <div id="windGust"></div>
     <div id="bombBlast">💥 폭탄이 터졌습니다!</div>
     <div id="skillBlast"></div>
+    <div id="bigAnnounce"></div>
   </div>
 
   <div id="controls">
@@ -294,7 +327,9 @@
 <script>
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
+const W = canvas.width;
+const VIEWPORT_H = canvas.height;   // 화면에 보이는 세로 영역
+const H = 1425;                     // 전체 맵(월드) 높이 - 카메라가 이 안에서 움직임
 
 const MARGIN = 40;
 const PLAY_LEFT = MARGIN, PLAY_RIGHT = W - MARGIN;
@@ -382,6 +417,176 @@ function buildPegs() {
 
 let pegs = buildPegs();
 
+// ✨ 배경 별 장식 (은은하게 반짝이는 장식용, 물리와 무관)
+const STAR_COUNT = 60;
+const stars = [];
+for (let i = 0; i < STAR_COUNT; i++) {
+  stars.push({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    r: 0.5 + Math.random() * 1.3,
+    phase: Math.random() * Math.PI * 2,
+    speed: 0.5 + Math.random() * 1.5
+  });
+}
+function drawStars(ts) {
+  for (const s of stars) {
+    const tw = 0.4 + 0.6 * Math.abs(Math.sin((ts / 1000) * s.speed + s.phase));
+    ctx.fillStyle = `rgba(200,215,255,${tw * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// 🌌 은은한 성운(네뷸라) 장식 - 캔버스 안에 직접 그려서 화면 크기와 무관하게 항상 보이도록
+const nebulaBlobs = [
+  { x: W * 0.18, y: H * 0.05, r: 220, color: '130,100,255' },
+  { x: W * 0.82, y: H * 0.03, r: 190, color: '90,180,255' },
+  { x: W * 0.55, y: H * 0.22, r: 240, color: '255,140,90' },
+  { x: W * 0.25, y: H * 0.42, r: 210, color: '160,100,255' },
+  { x: W * 0.75, y: H * 0.58, r: 230, color: '90,200,255' },
+  { x: W * 0.4, y: H * 0.75, r: 220, color: '255,150,120' },
+  { x: W * 0.65, y: H * 0.92, r: 200, color: '140,120,255' }
+];
+function drawNebula() {
+  for (const b of nebulaBlobs) {
+    const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    grad.addColorStop(0, `rgba(${b.color},0.16)`);
+    grad.addColorStop(1, `rgba(${b.color},0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// 🛰️ 우주 쓰레기 장애물 디자인: 위성 파편 / 로켓 부스터 / 파손된 선체 / 경고 빔
+function pegHash(p) {
+  const n = Math.sin(p.cx * 12.9898 + p.cy * 78.233) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function drawSatellitePeg(p) {
+  const hw = p.halfW, hh = p.halfH;
+  // 본체
+  ctx.fillStyle = '#8a94a8';
+  ctx.beginPath();
+  ctx.roundRect(p.cx - Math.min(hw, 8), p.cy - hh, Math.min(hw, 8) * 2, hh * 2, 2);
+  ctx.fill();
+  // 태양광 패널 (양쪽)
+  const panelW = Math.max(2, hw - 8);
+  ctx.fillStyle = '#2c4f8f';
+  if (hw > 10) {
+    ctx.fillRect(p.cx - hw, p.cy - hh * 0.7, panelW, hh * 1.4);
+    ctx.fillRect(p.cx + hw - panelW, p.cy - hh * 0.7, panelW, hh * 1.4);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 0.5;
+    for (let gx = 1; gx < 4; gx++) {
+      const lx1 = p.cx - hw + (panelW / 4) * gx;
+      const lx2 = p.cx + hw - panelW + (panelW / 4) * gx;
+      ctx.beginPath(); ctx.moveTo(lx1, p.cy - hh * 0.7); ctx.lineTo(lx1, p.cy + hh * 0.7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(lx2, p.cy - hh * 0.7); ctx.lineTo(lx2, p.cy + hh * 0.7); ctx.stroke();
+    }
+  }
+  // 깜빡이는 안테나 불빛
+  const blink = Math.sin(p.cx * 0.7 + p.cy * 0.3) > 0.3;
+  ctx.fillStyle = blink ? '#ff6b6b' : '#7c3b3b';
+  ctx.beginPath();
+  ctx.arc(p.cx, p.cy - hh - 1.5, 1.3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawRocketPeg(p) {
+  const hw = p.halfW, hh = p.halfH;
+  const grad = ctx.createLinearGradient(p.cx, p.cy - hh, p.cx, p.cy + hh);
+  grad.addColorStop(0, '#d9dde6');
+  grad.addColorStop(0.5, '#a8afc0');
+  grad.addColorStop(1, '#767d8f');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(p.cx - hw, p.cy - hh, hw * 2, hh * 2, Math.min(hh, 4));
+  ctx.fill();
+  // 경고 스트라이프 (끝부분)
+  if (hw > 6) {
+    ctx.fillStyle = '#ff7b3f';
+    const stripeW = Math.min(6, hw * 0.4);
+    ctx.fillRect(p.cx + hw - stripeW, p.cy - hh, stripeW, hh * 2);
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(p.cx - hw + 2, p.cy - hh + 1);
+  ctx.lineTo(p.cx + hw - 2, p.cy - hh + 1);
+  ctx.stroke();
+}
+
+function drawHullPeg(p) {
+  const hw = p.halfW, hh = p.halfH;
+  const jag = Math.min(2.5, hh * 0.5);
+  ctx.fillStyle = '#5c6270';
+  ctx.beginPath();
+  ctx.moveTo(p.cx - hw, p.cy - hh + jag);
+  ctx.lineTo(p.cx - hw + jag, p.cy - hh);
+  ctx.lineTo(p.cx + hw - jag * 0.6, p.cy - hh);
+  ctx.lineTo(p.cx + hw, p.cy - hh + jag);
+  ctx.lineTo(p.cx + hw, p.cy + hh);
+  ctx.lineTo(p.cx - hw + jag * 0.4, p.cy + hh);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(180,190,210,0.4)';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(p.cx - hw * 0.4, p.cy - hh);
+  ctx.lineTo(p.cx - hw * 0.1, p.cy + hh);
+  ctx.stroke();
+  // 리벳
+  if (hw > 6) {
+    ctx.fillStyle = 'rgba(210,215,225,0.5)';
+    for (let rx = -hw + 4; rx < hw - 3; rx += 7) {
+      ctx.beginPath();
+      ctx.arc(p.cx + rx, p.cy, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawHazardPeg(p) {
+  const hw = p.halfW, hh = p.halfH;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(p.cx - hw, p.cy - hh, hw * 2, hh * 2, Math.min(hh, 4));
+  ctx.clip();
+  ctx.fillStyle = '#3a3d46';
+  ctx.fillRect(p.cx - hw, p.cy - hh, hw * 2, hh * 2);
+  ctx.fillStyle = '#ffcb3d';
+  const stripeGap = 7;
+  for (let sx = -hw - hh; sx < hw + hh; sx += stripeGap) {
+    ctx.beginPath();
+    ctx.moveTo(p.cx + sx, p.cy - hh);
+    ctx.lineTo(p.cx + sx + hh, p.cy - hh);
+    ctx.lineTo(p.cx + sx + hh - hh * 2, p.cy + hh);
+    ctx.lineTo(p.cx + sx - hh * 2, p.cy + hh);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(p.cx - hw, p.cy - hh, hw * 2, hh * 2, Math.min(hh, 4));
+  ctx.stroke();
+}
+
+function drawPeg(p) {
+  const t = Math.floor(pegHash(p) * 4);
+  if (t === 0) drawSatellitePeg(p);
+  else if (t === 1) drawRocketPeg(p);
+  else if (t === 2) drawHullPeg(p);
+  else drawHazardPeg(p);
+}
+
+
 // 독버섯 폭탄: 정찰병 캐릭터가 2초마다 걸어와서 심고 사라짐
 const BOMB_CAP_R = 7.5;
 const BOMB_STEM_H = 4;
@@ -464,6 +669,7 @@ let balls = [];
 let dropX = CENTER_X;
 let dropStartTime = null;
 let gameEnded = false;
+let cameraY = 0; // 카메라가 월드 안에서 스크롤되는 위치 (1등을 따라감)
 let finishOrder = [];
 let animId = null;
 let lastTs = null;
@@ -479,6 +685,61 @@ function pickLeadingBall() {
     if (b && !b.landed && (!leader || b.y > leader.y)) leader = b;
   }
   return leader;
+}
+
+function pickLastPlaceBall() {
+  let last = null;
+  for (const b of balls) {
+    if (b && !b.landed && (!last || b.y < last.y)) last = b;
+  }
+  return last;
+}
+
+// 📸 10초마다 3초간 꼴등 공을 비추고 원래 앵글(1등 추적)로 복귀
+const LAST_PLACE_CAM_INTERVAL = 10.0;
+const LAST_PLACE_CAM_DURATION = 3.0;
+let lastPlaceCamTimer = 6.0;
+let cameraOverride = null; // {ballId, timer}
+
+function triggerLastPlaceCam() {
+  const target = pickLastPlaceBall();
+  if (!target) return;
+  cameraOverride = { ballId: target.id, timer: LAST_PLACE_CAM_DURATION };
+  announceSkill(`📸 꼴찌 ${target.name} 공을 비춥니다!`);
+}
+
+function computeCameraTarget() {
+  if (cameraOverride && cameraOverride.timer > 0) {
+    const b = balls.find(x => x && x.id === cameraOverride.ballId && !x.landed);
+    if (b) {
+      return Math.max(0, Math.min(H - VIEWPORT_H, b.y - VIEWPORT_H * 0.4));
+    }
+    cameraOverride = null; // 대상이 이미 도착했거나 사라지면 조기 종료
+  }
+  const leader = pickLeadingBall();
+  let targetY;
+  if (leader) {
+    if (leader.y >= NECK_Y - 40) {
+      // 목 구간(골 근처)에 들어오면 결승선 바닥까지 한 번에 보이도록 고정
+      targetY = H - VIEWPORT_H;
+    } else {
+      targetY = leader.y - VIEWPORT_H * 0.4; // 1등이 화면 중앙보다 살짝 위쪽에 오도록
+    }
+  } else if (balls.length > 0) {
+    targetY = H - VIEWPORT_H; // 전원 도착 시 결승선 부근을 보여줌
+  } else {
+    targetY = 0; // 드롭 전에는 맨 위를 보여줌
+  }
+  return Math.max(0, Math.min(H - VIEWPORT_H, targetY));
+}
+
+function updateCamera(dt) {
+  if (cameraOverride) {
+    cameraOverride.timer -= dt;
+    if (cameraOverride.timer <= 0) cameraOverride = null;
+  }
+  const target = computeCameraTarget();
+  cameraY += (target - cameraY) * Math.min(1, dt * 3.2);
 }
 function pickMostDamagedBall() {
   let target = null;
@@ -1052,10 +1313,15 @@ function carveHoleAtPeg(peg, x, width) {
 const MAX_DAMAGE_STAGE = 30;
 function generateBallShape(hits) {
   const progress = Math.min(hits, MAX_DAMAGE_STAGE) / MAX_DAMAGE_STAGE;
-  const sides = Math.max(3, Math.round(10 - progress * 7));
-  const jag = progress * 0.42;
+  const sides = 10; // 변의 개수는 유지하고, 파손될수록 뾰족한 파편 형태로 변형
+  const jag = progress * 0.5;
+  const spikiness = progress; // 홀수 꼭짓점을 안쪽으로 당겨서 별/파편 실루엣을 만듦
   const variance = [];
-  for (let i = 0; i < sides; i++) variance.push(1 - jag + Math.random() * jag * 1.4);
+  for (let i = 0; i < sides; i++) {
+    let v = 1 - jag + Math.random() * jag * 1.4;
+    if (i % 2 === 1) v *= (1 - spikiness * 0.55);
+    variance.push(v);
+  }
   return { sides, variance };
 }
 
@@ -1084,44 +1350,66 @@ function circleBarCollision(cx, cy, cr, rx, ry, halfW, halfH) {
   return null;
 }
 
-// 🌬️ 풍차: 골대 근처(목 구간)에서 시계방향으로 천천히 회전하는 장애물
+// 🌬️ 풍차: 골대 근처(목 구간)에서 회전하는 장애물 — 두 개를 서로 반대 방향으로 돌려서 치열한 난전 구간을 만듦
 const WINDMILL_X = CENTER_X;
 const WINDMILL_Y = H - 100;
 const WINDMILL_BLADE_LEN = 22;
 const WINDMILL_BLADE_HALF_W = 3.5;
 const WINDMILL_HUB_R = 7;
-const WINDMILL_ROT_SPEED = 0.35; // rad/s, 느리게 시계방향
+const WINDMILL_ROT_SPEED = 0.35; // rad/s
 
-let windmillAngle = 0;
+const windmills = [
+  { x: WINDMILL_X, y: WINDMILL_Y, angle: 0, speed: WINDMILL_ROT_SPEED, health: 100, hitCooldown: 0 },
+  { x: WINDMILL_X, y: WINDMILL_Y - 55, angle: Math.PI / 4, speed: -WINDMILL_ROT_SPEED * 1.4, health: 100, hitCooldown: 0 }
+];
 
 function updateWindmill(dt) {
-  windmillAngle += WINDMILL_ROT_SPEED * dt;
+  for (const wm of windmills) {
+    const healthFactor = 0.3 + 0.7 * (wm.health / 100); // 많이 파손될수록 회전이 느려짐
+    wm.angle += wm.speed * healthFactor * dt;
+    if (wm.hitCooldown > 0) wm.hitCooldown -= dt;
+  }
 }
 
-function drawWindmill() {
+function drawOneWindmill(wm) {
+  const bladeLen = WINDMILL_BLADE_LEN * Math.max(0, wm.health / 100);
+  const damaged = wm.health < 100;
   ctx.save();
-  ctx.translate(WINDMILL_X, WINDMILL_Y);
-  for (let i = 0; i < 4; i++) {
-    const a = windmillAngle + i * (Math.PI / 2);
-    ctx.save();
-    ctx.rotate(a);
-    ctx.fillStyle = i % 2 === 0 ? '#ffd66b' : '#ff9f6b';
-    ctx.beginPath();
-    ctx.roundRect(0, -WINDMILL_BLADE_HALF_W, WINDMILL_BLADE_LEN, WINDMILL_BLADE_HALF_W * 2, 2);
-    ctx.fill();
-    ctx.strokeStyle = '#7c4a1e';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
+  ctx.translate(wm.x, wm.y);
+  if (bladeLen > 1) {
+    for (let i = 0; i < 4; i++) {
+      const a = wm.angle + i * (Math.PI / 2);
+      ctx.save();
+      ctx.rotate(a);
+      ctx.fillStyle = i % 2 === 0
+        ? (damaged ? '#c98f3a' : '#ffd66b')
+        : (damaged ? '#8f5230' : '#ff9f6b');
+      ctx.beginPath();
+      ctx.roundRect(0, -WINDMILL_BLADE_HALF_W, bladeLen, WINDMILL_BLADE_HALF_W * 2, 2);
+      ctx.fill();
+      ctx.strokeStyle = '#7c4a1e';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
   }
-  ctx.fillStyle = '#4b5486';
+  ctx.fillStyle = wm.health <= 0 ? '#3a3f52' : '#4b5486';
   ctx.beginPath();
   ctx.arc(0, 0, WINDMILL_HUB_R, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = '#8fa3ff';
+  ctx.strokeStyle = wm.health <= 20 ? 'rgba(255,120,90,0.8)' : '#8fa3ff';
   ctx.lineWidth = 1.5;
   ctx.stroke();
   ctx.restore();
+
+  // 파손이 심하면 연기 효과
+  if (wm.health <= 40 && wm.health > 0 && Math.random() < 0.15) {
+    spawnColorBurst(wm.x + (Math.random() - 0.5) * 10, wm.y - 4, ['120,120,130', '90,90,100'], 1, 8, 20);
+  }
+}
+
+function drawWindmill() {
+  for (const wm of windmills) drawOneWindmill(wm);
 }
 
 // 회전하는 막대(날개)와 원의 충돌: 허브 기준 로컬 좌표로 변환해서 계산
@@ -1146,38 +1434,57 @@ function circleRotatedBarCollision(cx, cy, cr, hubX, hubY, bladeAngle, length, h
 
 function resolveWindmillCollision(b) {
   if (!b || b.landed) return;
-  for (let i = 0; i < 4; i++) {
-    const a = windmillAngle + i * (Math.PI / 2);
-    const col = circleRotatedBarCollision(b.x, b.y, b.radius, WINDMILL_X, WINDMILL_Y, a, WINDMILL_BLADE_LEN, WINDMILL_BLADE_HALF_W);
-    if (col) {
-      b.x += col.nx * col.pen;
-      b.y += col.ny * col.pen;
-      const dot = b.vx * col.nx + b.vy * col.ny;
+  const isBig = b.radius > PHASE_THROUGH_START_RADIUS;
+  for (const wm of windmills) {
+    const bladeLen = WINDMILL_BLADE_LEN * Math.max(0, wm.health / 100);
+    if (bladeLen > 1) {
+      for (let i = 0; i < 4; i++) {
+        const a = wm.angle + i * (Math.PI / 2);
+        const col = circleRotatedBarCollision(b.x, b.y, b.radius, wm.x, wm.y, a, bladeLen, WINDMILL_BLADE_HALF_W);
+        if (col) {
+          b.x += col.nx * col.pen;
+          b.y += col.ny * col.pen;
+          const dot = b.vx * col.nx + b.vy * col.ny;
+          if (dot < 0) {
+            const impulse = (1 + RESTITUTION) * dot;
+            b.vx -= impulse * col.nx;
+            b.vy -= impulse * col.ny;
+          }
+          // 회전하는 날개에 맞은 느낌: 접선 방향으로 밀어냄 (치열한 난전을 위해 세게)
+          const distFromHub = Math.hypot(b.x - wm.x, b.y - wm.y);
+          const tangentX = -Math.sin(a), tangentY = Math.cos(a);
+          const kick = Math.abs(wm.speed) * distFromHub * 55 * Math.sign(wm.speed || 1);
+          b.vx += tangentX * kick;
+          b.vy += tangentY * kick;
+
+          // 일정 크기 이상인 공이 부딪히면 풍차를 조금씩 파손시킴
+          if (isBig && wm.hitCooldown <= 0 && wm.health > 0) {
+            wm.health = Math.max(0, wm.health - 15);
+            wm.hitCooldown = 0.5;
+            spawnColorBurst(b.x, b.y, ['255,200,120', '255,150,90'], 12, 40, 130);
+            if (wm.health <= 0) {
+              screenShake = Math.max(screenShake, 8);
+              announceSkill('🌬️ 풍차 날개가 완전히 파괴되었습니다!');
+            } else {
+              announceSkill('🌬️ 풍차가 파손되고 있습니다!');
+            }
+          }
+        }
+      }
+    }
+    const dx = b.x - wm.x, dy = b.y - wm.y;
+    const dist = Math.hypot(dx, dy);
+    const minDist = b.radius + WINDMILL_HUB_R;
+    if (dist < minDist && dist > 0.001) {
+      const nx = dx / dist, ny = dy / dist;
+      b.x += nx * (minDist - dist);
+      b.y += ny * (minDist - dist);
+      const dot = b.vx * nx + b.vy * ny;
       if (dot < 0) {
         const impulse = (1 + RESTITUTION) * dot;
-        b.vx -= impulse * col.nx;
-        b.vy -= impulse * col.ny;
+        b.vx -= impulse * nx;
+        b.vy -= impulse * ny;
       }
-      // 회전하는 날개에 맞은 느낌: 접선 방향으로 살짝 밀어냄
-      const distFromHub = Math.hypot(b.x - WINDMILL_X, b.y - WINDMILL_Y);
-      const tangentX = -Math.sin(a), tangentY = Math.cos(a);
-      const kick = WINDMILL_ROT_SPEED * distFromHub * 40;
-      b.vx += tangentX * kick;
-      b.vy += tangentY * kick;
-    }
-  }
-  const dx = b.x - WINDMILL_X, dy = b.y - WINDMILL_Y;
-  const dist = Math.hypot(dx, dy);
-  const minDist = b.radius + WINDMILL_HUB_R;
-  if (dist < minDist && dist > 0.001) {
-    const nx = dx / dist, ny = dy / dist;
-    b.x += nx * (minDist - dist);
-    b.y += ny * (minDist - dist);
-    const dot = b.vx * nx + b.vy * ny;
-    if (dot < 0) {
-      const impulse = (1 + RESTITUTION) * dot;
-      b.vx -= impulse * nx;
-      b.vy -= impulse * ny;
     }
   }
 }
@@ -1644,6 +1951,13 @@ function drawTornado() {
 const LIGHT_INTERVAL = 10.0;
 const LIGHT_MIN_RADIUS = 3;
 const LIGHT_MAX_RADIUS = 40;
+
+// 공이 일정 크기 이상 커지면 벽/장애물에 완전히 갇히지 않도록 아주 살짝 뚫고 지나가게 함
+const PHASE_THROUGH_START_RADIUS = 14;
+function getPhaseFactor(b) {
+  if (b.radius <= PHASE_THROUGH_START_RADIUS) return 1;
+  return Math.max(0.25, 1 - (b.radius - PHASE_THROUGH_START_RADIUS) / 40);
+}
 let lightTimer = 6.0;
 let lightBeam = null; // {x, targetY, age, life, blessed}
 
@@ -1786,6 +2100,22 @@ const timerEl = document.getElementById('timer');
 const statusEl = document.getElementById('status');
 const resultEl = document.getElementById('result');
 const leaderboardEl = document.getElementById('leaderboard');
+
+const bigAnnounceEl = document.getElementById('bigAnnounce');
+let bigAnnounceTimeout = null;
+const RANK_LABELS = ['🥇 1등', '🥈 2등', '🥉 3등', '4등', '5등'];
+function announceFinish(rankIndex, ball) {
+  const rankLabel = RANK_LABELS[rankIndex] || `${rankIndex + 1}등`;
+  bigAnnounceEl.textContent = `${rankLabel} 도착! ${ball.name}`;
+  bigAnnounceEl.style.color = rankIndex === 0 ? '#ffe9b0' : rankIndex === 1 ? '#e6ecff' : rankIndex === 2 ? '#ffcfa8' : '#cfd6f5';
+  bigAnnounceEl.style.borderColor = rankIndex === 0 ? 'rgba(255,214,107,0.7)' : rankIndex === 1 ? 'rgba(200,210,255,0.6)' : rankIndex === 2 ? 'rgba(255,170,110,0.6)' : 'rgba(157,214,255,0.5)';
+  bigAnnounceEl.classList.remove('show');
+  void bigAnnounceEl.offsetWidth; // 재시작을 위한 리플로우 강제
+  bigAnnounceEl.classList.add('show');
+  clearTimeout(bigAnnounceTimeout);
+  bigAnnounceTimeout = setTimeout(() => bigAnnounceEl.classList.remove('show'), 1600);
+}
+
 const dropBtn = document.getElementById('dropBtn');
 const resetBtn = document.getElementById('resetBtn');
 
@@ -1852,12 +2182,19 @@ function resetGame() {
   lightBeam = null;
   lightTimer = 6.0;
   ufoTimer = 7.0;
-  windmillAngle = 0;
+  windmills[0].angle = 0;
+  windmills[0].health = 100;
+  windmills[0].hitCooldown = 0;
+  windmills[1].angle = Math.PI / 4;
+  windmills[1].health = 100;
+  windmills[1].hitCooldown = 0;
   event45Fired = false;
   event60Fired = false;
   missiles = [];
   globalShrinkFlash = null;
   gameEnded = false;
+  lastPlaceCamTimer = 6.0;
+  cameraOverride = null;
 
   // 바람 초기화
   windX = 0; windY = 0;
@@ -1900,6 +2237,8 @@ function startDrop() {
   missiles = [];
   globalShrinkFlash = null;
   gameEnded = false;
+  lastPlaceCamTimer = 6.0;
+  cameraOverride = null;
 
   const usableLeft = PLAY_LEFT + 40, usableRight = PLAY_RIGHT - 40;
   const usableWidth = usableRight - usableLeft;
@@ -1956,10 +2295,12 @@ function physicsStep(b, dt) {
   b.y += b.vy * dt;
 
   const bounds = funnelBounds(b.y);
+  const phase = getPhaseFactor(b); // 커진 공은 벽/장애물을 아주 살짝 뚫고 지나갈 수 있음
   const WALL_BURST_THRESHOLD = 220;
   if (b.x - b.radius < bounds.left) {
     const impactSpeed = Math.abs(b.vx);
-    b.x = bounds.left + b.radius;
+    const targetX = bounds.left + b.radius;
+    b.x += (targetX - b.x) * phase;
     b.vx = Math.max(impactSpeed * WALL_RESTITUTION, 60);
     wallFlash = 1;
     if (impactSpeed > WALL_BURST_THRESHOLD) {
@@ -1969,7 +2310,8 @@ function physicsStep(b, dt) {
     }
   } else if (b.x + b.radius > bounds.right) {
     const impactSpeed = Math.abs(b.vx);
-    b.x = bounds.right - b.radius;
+    const targetX = bounds.right - b.radius;
+    b.x += (targetX - b.x) * phase;
     b.vx = -Math.max(impactSpeed * WALL_RESTITUTION, 60);
     wallFlash = 1;
     if (impactSpeed > WALL_BURST_THRESHOLD) {
@@ -1985,11 +2327,20 @@ function physicsStep(b, dt) {
     ceilingFlash = 1;
   }
 
+  const isBig = b.radius > PHASE_THROUGH_START_RADIUS;
+  const pegsToCarve = [];
   for (const p of pegs) {
     const col = circleBarCollision(b.x, b.y, b.radius, p.cx, p.cy, p.halfW, p.halfH);
     if (col) {
-      b.x += col.nx * col.pen;
-      b.y += col.ny * col.pen;
+      if (isBig) {
+        // 크게 밀어내는 대신, 살짝만 밀어내고 그 자리에 작은 구멍을 뚫음
+        b.x += col.nx * col.pen * 0.2;
+        b.y += col.ny * col.pen * 0.2;
+        pegsToCarve.push(p);
+      } else {
+        b.x += col.nx * col.pen;
+        b.y += col.ny * col.pen;
+      }
       const dot = b.vx * col.nx + b.vy * col.ny;
       if (dot < 0) {
         const impulse = (1 + RESTITUTION) * dot;
@@ -1998,6 +2349,11 @@ function physicsStep(b, dt) {
         b.vx += (Math.random() - 0.5) * 90;
       }
     }
+  }
+  if (pegsToCarve.length > 0) {
+    const holeWidth = Math.min(30, b.radius * 1.2);
+    for (const p of pegsToCarve) carveHoleAtPeg(p, b.x, holeWidth);
+    spawnPuffParticles(b.x, b.y);
   }
 
   b.vx += windX * WIND_FORCE_MULT * dt;
@@ -2143,21 +2499,31 @@ function drawBallShape(b) {
 
 function draw(ts) {
   ts = ts || performance.now();
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(0, 0, W, VIEWPORT_H);
 
   ctx.save();
   if (screenShake > 0.1) {
     ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
   }
+  ctx.translate(0, -cameraY);
 
-  ctx.fillStyle = '#10132a';
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#141833');
+  bgGrad.addColorStop(0.5, '#0f1229');
+  bgGrad.addColorStop(1, '#0a0c1c');
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
+  drawNebula();
+  drawStars(ts);
   drawWindParticles();
 
   // 좌우 깔때기 벽 (항상 표시, 부딪히면 잠깐 밝아짐)
-  ctx.strokeStyle = `rgba(157, 214, 255, ${0.35 + wallFlash * 0.65})`;
-  ctx.lineWidth = wallFlash > 0.05 ? 4 : 2;
+  ctx.save();
+  ctx.shadowColor = 'rgba(157,214,255,0.7)';
+  ctx.shadowBlur = 7;
+  ctx.strokeStyle = `rgba(180, 224, 255, ${0.65 + wallFlash * 0.35})`;
+  ctx.lineWidth = wallFlash > 0.05 ? 5 : 3;
   ctx.beginPath();
   ctx.moveTo(PLAY_LEFT, 0);
   ctx.lineTo(NECK_LEFT, NECK_Y);
@@ -2166,23 +2532,25 @@ function draw(ts) {
   ctx.lineTo(NECK_RIGHT, NECK_Y);
   ctx.lineTo(NECK_RIGHT, H);
   ctx.stroke();
+  ctx.restore();
   if (wallFlash > 0) wallFlash = Math.max(0, wallFlash - 0.08);
 
   // 맨 위 천장
-  ctx.strokeStyle = `rgba(157, 214, 255, ${0.35 + ceilingFlash * 0.65})`;
-  ctx.lineWidth = ceilingFlash > 0.05 ? 4 : 2;
+  ctx.save();
+  ctx.shadowColor = 'rgba(157,214,255,0.8)';
+  ctx.shadowBlur = 8;
+  ctx.strokeStyle = `rgba(180, 224, 255, ${0.65 + ceilingFlash * 0.35})`;
+  ctx.lineWidth = ceilingFlash > 0.05 ? 5 : 3;
   ctx.beginPath();
   ctx.moveTo(PLAY_LEFT, CEILING_Y);
   ctx.lineTo(PLAY_RIGHT, CEILING_Y);
   ctx.stroke();
+  ctx.restore();
   if (ceilingFlash > 0) ceilingFlash = Math.max(0, ceilingFlash - 0.08);
 
-  // pegs
-  ctx.fillStyle = '#8fa3ff';
+  // pegs (우주 쓰레기 장애물)
   for (const p of pegs) {
-    ctx.beginPath();
-    ctx.roundRect(p.cx - p.halfW, p.cy - p.halfH, p.halfW * 2, p.halfH * 2, Math.min(p.halfH, 5));
-    ctx.fill();
+    drawPeg(p);
   }
 
   drawBombs(ts);
@@ -2202,13 +2570,17 @@ function draw(ts) {
   drawMissiles();
 
   // 결승선
-  ctx.strokeStyle = '#4b5486';
-  ctx.lineWidth = 2;
+  ctx.save();
+  ctx.shadowColor = 'rgba(143,163,255,0.9)';
+  ctx.shadowBlur = 10;
+  ctx.strokeStyle = '#8fa3ff';
+  ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(NECK_LEFT, H - 4);
   ctx.lineTo(NECK_RIGHT, H - 4);
   ctx.stroke();
-  ctx.fillStyle = '#7a83ad';
+  ctx.restore();
+  ctx.fillStyle = '#cfd6ff';
   ctx.font = '11px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('FINISH', CENTER_X, H - 8);
@@ -2252,6 +2624,7 @@ function loop(ts) {
   const dt = Math.min(0.032, (ts - lastTs) / 1000);
   lastTs = ts;
 
+  updateCamera(dt);
   updateWind(dt);
   spawnWindParticles(dt);
   updateWindParticles(dt);
@@ -2322,6 +2695,12 @@ function loop(ts) {
       triggerUFO();
     }
 
+    lastPlaceCamTimer -= dt;
+    if (lastPlaceCamTimer <= 0) {
+      lastPlaceCamTimer = LAST_PLACE_CAM_INTERVAL;
+      if (!cameraOverride) triggerLastPlaceCam();
+    }
+
     if (dropStartTime) {
       const raceElapsed = (ts - dropStartTime) / 1000;
       if (!event45Fired && raceElapsed >= 45) {
@@ -2363,6 +2742,7 @@ function loop(ts) {
         b.recorded = true;
         const t = (ts - dropStartTime) / 1000;
         finishOrder.push({ name: b.name, color: b.color, time: t });
+        announceFinish(finishOrder.length - 1, b);
         renderLeaderboard();
       }
     }
