@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>당신에게 커피를 살 수 있는 영광이 있기를!</title>
 <style>
   * { box-sizing: border-box; }
@@ -41,12 +42,17 @@
     background: linear-gradient(155deg, #262d58 0%, #181c37 55%, #10132a 100%);
     border: 2px solid rgba(157,214,255,0.35);
     box-shadow: 0 18px 44px rgba(0,0,0,0.55), 0 0 28px rgba(110,140,255,0.12), inset 0 0 0 1px rgba(255,255,255,0.06);
+    width: 100%;
+    max-width: 484px;
   }
   canvas {
     display: block;
     border-radius: 13px;
     background: #0d1024;
     box-shadow: inset 0 0 0 2px rgba(157,214,255,0.22), inset 0 0 30px rgba(0,0,0,0.35);
+    width: 100%;
+    height: auto;
+    aspect-ratio: 460 / 640;
   }
   #hud {
     display: flex;
@@ -461,7 +467,271 @@ function drawNebula() {
   }
 }
 
-// 🛰️ 우주 쓰레기 장애물 디자인: 위성 파편 / 로켓 부스터 / 파손된 선체 / 경고 빔
+// 🕳️ 배경 장식용 블랙홀 (게임 플레이와 무관한 순수 장식)
+const BLACKHOLE_X = W * 0.26;
+const BLACKHOLE_Y = H * 0.33;
+const BLACKHOLE_R = 44;
+function drawBlackHole(ts) {
+  const t = ts / 1000;
+  ctx.save();
+  ctx.translate(BLACKHOLE_X, BLACKHOLE_Y);
+
+  // 은은한 중력 렌즈 글로우
+  const glow = ctx.createRadialGradient(0, 0, BLACKHOLE_R * 0.5, 0, 0, BLACKHOLE_R * 2.3);
+  glow.addColorStop(0, 'rgba(150,120,255,0.16)');
+  glow.addColorStop(1, 'rgba(150,120,255,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, BLACKHOLE_R * 2.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 소용돌이치는 강착원반 (여러 겹의 회전 타원 고리)
+  for (let i = 0; i < 3; i++) {
+    ctx.save();
+    ctx.rotate(t * (0.15 + i * 0.06) * (i % 2 === 0 ? 1 : -1));
+    const rx = BLACKHOLE_R * (1.6 + i * 0.4);
+    const ry = BLACKHOLE_R * (0.5 + i * 0.14);
+    const grad = ctx.createLinearGradient(-rx, 0, rx, 0);
+    grad.addColorStop(0, 'rgba(255,170,90,0)');
+    grad.addColorStop(0.5, `rgba(${i === 1 ? '170,140,255' : '255,170,90'},0.28)`);
+    grad.addColorStop(1, 'rgba(120,180,255,0)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 2.6 - i * 0.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 사건의 지평선 (검은 중심부)
+  const core = ctx.createRadialGradient(0, 0, 0, 0, 0, BLACKHOLE_R);
+  core.addColorStop(0, 'rgba(0,0,0,0.97)');
+  core.addColorStop(0.85, 'rgba(0,0,0,0.9)');
+  core.addColorStop(1, 'rgba(10,5,20,0)');
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.arc(0, 0, BLACKHOLE_R, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// 🐕 배경 장식용 시바견(도지) 얼굴 (게임 플레이와 무관한 순수 장식)
+const SHIBA_X = W * 0.76;
+const SHIBA_Y = H * 0.63;
+const SHIBA_R = 38;
+function drawShiba(ts) {
+  const bob = Math.sin(ts / 900) * 3;
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.translate(SHIBA_X, SHIBA_Y + bob);
+
+  // 귀 (바깥쪽)
+  ctx.fillStyle = '#c98a4b';
+  ctx.beginPath();
+  ctx.moveTo(-SHIBA_R * 0.75, -SHIBA_R * 0.55);
+  ctx.lineTo(-SHIBA_R * 1.15, -SHIBA_R * 1.5);
+  ctx.lineTo(-SHIBA_R * 0.15, -SHIBA_R * 0.85);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(SHIBA_R * 0.75, -SHIBA_R * 0.55);
+  ctx.lineTo(SHIBA_R * 1.15, -SHIBA_R * 1.5);
+  ctx.lineTo(SHIBA_R * 0.15, -SHIBA_R * 0.85);
+  ctx.closePath();
+  ctx.fill();
+  // 귀 안쪽
+  ctx.fillStyle = '#f2d9b8';
+  ctx.beginPath();
+  ctx.moveTo(-SHIBA_R * 0.65, -SHIBA_R * 0.6);
+  ctx.lineTo(-SHIBA_R * 0.9, -SHIBA_R * 1.2);
+  ctx.lineTo(-SHIBA_R * 0.35, -SHIBA_R * 0.8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(SHIBA_R * 0.65, -SHIBA_R * 0.6);
+  ctx.lineTo(SHIBA_R * 0.9, -SHIBA_R * 1.2);
+  ctx.lineTo(SHIBA_R * 0.35, -SHIBA_R * 0.8);
+  ctx.closePath();
+  ctx.fill();
+
+  // 얼굴
+  ctx.fillStyle = '#d99a52';
+  ctx.beginPath();
+  ctx.arc(0, 0, SHIBA_R, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 흰색 볼/주둥이 마스크
+  ctx.fillStyle = '#f7ecd9';
+  ctx.beginPath();
+  ctx.ellipse(0, SHIBA_R * 0.25, SHIBA_R * 0.72, SHIBA_R * 0.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 눈
+  ctx.fillStyle = '#2a1c10';
+  ctx.beginPath();
+  ctx.ellipse(-SHIBA_R * 0.32, -SHIBA_R * 0.08, SHIBA_R * 0.09, SHIBA_R * 0.12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(SHIBA_R * 0.32, -SHIBA_R * 0.08, SHIBA_R * 0.09, SHIBA_R * 0.12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 코
+  ctx.fillStyle = '#241812';
+  ctx.beginPath();
+  ctx.ellipse(0, SHIBA_R * 0.22, SHIBA_R * 0.11, SHIBA_R * 0.08, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 입
+  ctx.strokeStyle = '#7a4a26';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(0, SHIBA_R * 0.3);
+  ctx.quadraticCurveTo(-SHIBA_R * 0.18, SHIBA_R * 0.48, -SHIBA_R * 0.05, SHIBA_R * 0.42);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, SHIBA_R * 0.3);
+  ctx.quadraticCurveTo(SHIBA_R * 0.18, SHIBA_R * 0.48, SHIBA_R * 0.05, SHIBA_R * 0.42);
+  ctx.stroke();
+
+  // 볼터치
+  ctx.fillStyle = 'rgba(255,140,140,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(-SHIBA_R * 0.55, SHIBA_R * 0.18, SHIBA_R * 0.14, SHIBA_R * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(SHIBA_R * 0.55, SHIBA_R * 0.18, SHIBA_R * 0.14, SHIBA_R * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// 🔥 도지 불뿜기: 10초마다 무작위 플레이어에게 파이어볼을 날려 태움 (탄 공은 서서히 작아짐)
+const DOGE_FIRE_INTERVAL = 10.0;
+const BURN_DURATION = 6.0;
+const BURN_SHRINK_RATE = 1.1; // px/s
+const BURN_MIN_RADIUS = 4;
+const FIREBALL_SPEED = 300; // px/s
+let dogeFireTimer = 5.0;
+let dogeFireball = null; // { x, y, targetId, life, trail:[] }
+
+function triggerDogeFire() {
+  const target = pickActiveBall();
+  if (!target) return;
+  const mouthX = SHIBA_X;
+  const mouthY = SHIBA_Y + SHIBA_R * 0.35;
+  dogeFireball = { x: mouthX, y: mouthY, targetId: target.id, life: 3.5, trail: [] };
+  announceSkill(`🔥 도지가 ${target.name} 공을 향해 파이어볼을 날렸습니다!`);
+}
+
+function updateDogeFireball(dt) {
+  const fb = dogeFireball;
+  if (!fb) return;
+  fb.life -= dt;
+  const target = balls.find(bl => bl && bl.id === fb.targetId && !bl.landed);
+  if (!target || fb.life <= 0) { dogeFireball = null; return; }
+
+  const dx = target.x - fb.x, dy = target.y - fb.y;
+  const dist = Math.hypot(dx, dy) || 0.0001;
+  const nx = dx / dist, ny = dy / dist;
+  fb.x += nx * FIREBALL_SPEED * dt;
+  fb.y += ny * FIREBALL_SPEED * dt;
+
+  fb.trail.push({ x: fb.x, y: fb.y, age: 0 });
+  for (const t of fb.trail) t.age += dt;
+  fb.trail = fb.trail.filter(t => t.age < 0.35);
+
+  if (dist < target.radius + 10) {
+    // 명중: 화르륵 타오르는 임팩트
+    target.burning = BURN_DURATION;
+    target.fireImpactFlash = 0.6;
+    spawnColorBurst(target.x, target.y, ['255,140,40', '255,90,20', '255,210,90'], 22, 90, 240);
+    screenShake = Math.max(screenShake, 6);
+    dogeFireball = null;
+  }
+}
+
+function drawDogeFireball() {
+  const fb = dogeFireball;
+  if (!fb) return;
+  ctx.save();
+  // 꼬리 (트레일)
+  for (const t of fb.trail) {
+    const a = Math.max(0, 1 - t.age / 0.35);
+    ctx.fillStyle = `rgba(255,120,30,${0.35 * a})`;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, 6 * a + 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // 파이어볼 본체 (여러 겹의 글로우 + 코어)
+  const outerGlow = ctx.createRadialGradient(fb.x, fb.y, 0, fb.x, fb.y, 20);
+  outerGlow.addColorStop(0, 'rgba(255,180,60,0.55)');
+  outerGlow.addColorStop(1, 'rgba(255,90,20,0)');
+  ctx.fillStyle = outerGlow;
+  ctx.beginPath();
+  ctx.arc(fb.x, fb.y, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  const core = ctx.createRadialGradient(fb.x, fb.y, 0, fb.x, fb.y, 8);
+  core.addColorStop(0, 'rgba(255,240,180,0.98)');
+  core.addColorStop(0.5, 'rgba(255,150,40,0.95)');
+  core.addColorStop(1, 'rgba(255,70,20,0.6)');
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.arc(fb.x, fb.y, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 회전하며 날름거리는 불꽃 조각들
+  const t = fb.life * 11;
+  for (let i = 0; i < 4; i++) {
+    const a = t + (i / 4) * Math.PI * 2;
+    const len = 9 + Math.sin(t * 2 + i) * 3;
+    const fx = fb.x + Math.cos(a) * 5;
+    const fy = fb.y + Math.sin(a) * 5;
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(255,150,40,0.85)' : 'rgba(255,220,120,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(fx + Math.cos(a) * len - Math.sin(a) * 3, fy + Math.sin(a) * len + Math.cos(a) * 3);
+    ctx.lineTo(fx + Math.cos(a) * len + Math.sin(a) * 3, fy + Math.sin(a) * len - Math.cos(a) * 3);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// 불타는 공 위에 그려지는 불꽃 효과 (맞은 직후엔 확 타올랐다가 서서히 잦아듦)
+function drawBurningOverlay(b, ts) {
+  const t = ts / 1000;
+  const flareBoost = 1 + Math.max(0, b.fireImpactFlash || 0) * 1.8; // 임팩트 직후 확 타오르는 모션
+  ctx.save();
+  const flicker = 0.75 + 0.25 * Math.sin(t * 14 + b.id);
+  const glowR = b.radius * 1.8 * flareBoost;
+  const glow = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, glowR);
+  glow.addColorStop(0, `rgba(255,150,40,${0.45 * flicker})`);
+  glow.addColorStop(1, 'rgba(255,80,20,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, glowR, 0, Math.PI * 2);
+  ctx.fill();
+
+  const flameCount = (b.fireImpactFlash || 0) > 0 ? 6 : 4;
+  for (let i = 0; i < flameCount; i++) {
+    const a = (i / flameCount) * Math.PI * 2 + t * 2.5 + b.id;
+    const flameLen = b.radius * (0.9 + 0.35 * Math.sin(t * 10 + i)) * flareBoost;
+    const fx = b.x + Math.cos(a) * b.radius * 0.6;
+    const fy = b.y + Math.sin(a) * b.radius * 0.6;
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(255,120,30,0.85)' : 'rgba(255,200,80,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(fx - flameLen * 0.28, fy - flameLen);
+    ctx.lineTo(fx + flameLen * 0.28, fy - flameLen);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+
 function pegHash(p) {
   const n = Math.sin(p.cx * 12.9898 + p.cy * 78.233) * 43758.5453;
   return n - Math.floor(n);
@@ -631,7 +901,7 @@ function generateBallInfo(n) {
   for (let i = 0; i < n; i++) {
     const hue = Math.round((i * 360) / n);
     info.push({
-      name: `플레이어 ${i + 1}번`,
+      name: `P${i + 1}`,
       color: `hsl(${hue}, 72%, 60%)`
     });
   }
@@ -1358,10 +1628,20 @@ const WINDMILL_BLADE_HALF_W = 3.5;
 const WINDMILL_HUB_R = 7;
 const WINDMILL_ROT_SPEED = 0.35; // rad/s
 
+// 위쪽 구간에 좌우 벽에 붙은 풍차 두 개 추가
+const WINDMILL_WALL_Y = H * 0.45;
+const wallBoundsAtWallWindmill = funnelBounds(WINDMILL_WALL_Y);
+const WINDMILL_WALL_REACH = WINDMILL_BLADE_LEN + WINDMILL_HUB_R;
+const WINDMILL_LEFT_X = wallBoundsAtWallWindmill.left + WINDMILL_WALL_REACH;
+const WINDMILL_RIGHT_X = wallBoundsAtWallWindmill.right - WINDMILL_WALL_REACH;
+
 const windmills = [
   { x: WINDMILL_X, y: WINDMILL_Y, angle: 0, speed: WINDMILL_ROT_SPEED, health: 100, hitCooldown: 0 },
-  { x: WINDMILL_X, y: WINDMILL_Y - 55, angle: Math.PI / 4, speed: -WINDMILL_ROT_SPEED * 1.4, health: 100, hitCooldown: 0 }
+  { x: WINDMILL_X, y: WINDMILL_Y - 55, angle: Math.PI / 4, speed: -WINDMILL_ROT_SPEED * 1.4, health: 100, hitCooldown: 0 },
+  { x: WINDMILL_LEFT_X, y: WINDMILL_WALL_Y, angle: 0, speed: WINDMILL_ROT_SPEED * 1.2, health: 100, hitCooldown: 0 },
+  { x: WINDMILL_RIGHT_X, y: WINDMILL_WALL_Y, angle: Math.PI / 4, speed: -WINDMILL_ROT_SPEED * 0.9, health: 100, hitCooldown: 0 }
 ];
+const windmillBaseAngles = windmills.map(wm => wm.angle);
 
 function updateWindmill(dt) {
   for (const wm of windmills) {
@@ -2182,12 +2462,13 @@ function resetGame() {
   lightBeam = null;
   lightTimer = 6.0;
   ufoTimer = 7.0;
-  windmills[0].angle = 0;
-  windmills[0].health = 100;
-  windmills[0].hitCooldown = 0;
-  windmills[1].angle = Math.PI / 4;
-  windmills[1].health = 100;
-  windmills[1].hitCooldown = 0;
+  dogeFireTimer = 5.0;
+  dogeFireball = null;
+  windmills.forEach((wm, i) => {
+    wm.angle = windmillBaseAngles[i];
+    wm.health = 100;
+    wm.hitCooldown = 0;
+  });
   event45Fired = false;
   event60Fired = false;
   missiles = [];
@@ -2269,6 +2550,8 @@ function startDrop() {
       skill: 1 + Math.floor(Math.random() * 5),
       skillTimer: Math.random() * 10,
       frozenTimer: 0,
+      burning: 0,
+      fireImpactFlash: 0,
       magnetPull: 0,
       magnetSourceId: null
     });
@@ -2287,6 +2570,12 @@ function physicsStep(b, dt) {
   }
 
   if (b.collisionCooldown > 0) b.collisionCooldown -= dt;
+
+  if (b.burning > 0) {
+    b.burning -= dt;
+    b.radius = Math.max(BURN_MIN_RADIUS, b.radius - BURN_SHRINK_RATE * dt);
+  }
+  if (b.fireImpactFlash > 0) b.fireImpactFlash -= dt;
 
   b.vy += GRAVITY * dt;
   b.vx *= AIR_DAMPING;
@@ -2487,12 +2776,12 @@ function drawBallShape(b) {
   // 작은 플레이어 이름 + 스킬 아이콘 라벨 (공 회전과 무관하게 항상 똑바로 표시)
   const skillInfo = SKILLS[(b.skill || 1) - 1];
   const label = skillInfo ? `${b.name} ${skillInfo.emoji}` : b.name;
-  ctx.font = '9px sans-serif';
+  ctx.font = 'bold 16px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-  ctx.lineWidth = 2;
-  const labelY = b.y - b.radius - 5;
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  ctx.lineWidth = 3.5;
+  const labelY = b.y - b.radius - 7;
   ctx.strokeText(label, b.x, labelY);
   ctx.fillText(label, b.x, labelY);
 }
@@ -2515,7 +2804,9 @@ function draw(ts) {
   ctx.fillRect(0, 0, W, H);
 
   drawNebula();
+  drawBlackHole(ts);
   drawStars(ts);
+  drawShiba(ts);
   drawWindParticles();
 
   // 좌우 깔때기 벽 (항상 표시, 부딪히면 잠깐 밝아짐)
@@ -2568,6 +2859,7 @@ function draw(ts) {
   drawTornado();
   drawLightBeam();
   drawMissiles();
+  drawDogeFireball();
 
   // 결승선
   ctx.save();
@@ -2588,6 +2880,7 @@ function draw(ts) {
   // 공들
   if (balls.length > 0) {
     for (const b of balls) {
+      if (b && b.burning > 0) drawBurningOverlay(b, ts);
       if (b) drawBallShape(b);
     }
   } else {
@@ -2682,6 +2975,13 @@ function loop(ts) {
     updateTornado(dt);
     updateWindmill(dt);
 
+    dogeFireTimer -= dt;
+    if (dogeFireTimer <= 0) {
+      dogeFireTimer = DOGE_FIRE_INTERVAL;
+      triggerDogeFire();
+    }
+    updateDogeFireball(dt);
+
     lightTimer -= dt;
     if (lightTimer <= 0) {
       lightTimer = LIGHT_INTERVAL;
@@ -2763,6 +3063,7 @@ function loop(ts) {
       tornado = null;
       lightBeam = null;
       globalShrinkFlash = null;
+      dogeFireball = null;
     }
   }
 
