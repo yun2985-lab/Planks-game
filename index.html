@@ -84,14 +84,14 @@
   #windRow.strong { color: #ffd66b; }
   #windGust {
     position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-6px);
-    background: rgba(16, 20, 46, 0.9);
+    right: 14px;
+    bottom: 90px;
+    transform: translateY(6px) scale(0.9);
+    background: rgba(16, 20, 46, 0.82);
     border: 1px solid rgba(157,214,255,0.35);
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 11px;
     font-weight: 600;
     color: #cfe8ff;
     opacity: 0;
@@ -102,18 +102,18 @@
   }
   #windGust.show {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0) scale(1);
   }
   #bombBlast {
     position: absolute;
-    top: 54px;
-    left: 50%;
-    transform: translateX(-50%) scale(0.85);
-    background: rgba(60, 16, 20, 0.92);
+    right: 14px;
+    bottom: 54px;
+    transform: translateY(6px) scale(0.85);
+    background: rgba(60, 16, 20, 0.85);
     border: 1px solid rgba(255,140,90,0.5);
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 11px;
     font-weight: 700;
     color: #ffd0b0;
     opacity: 0;
@@ -124,18 +124,18 @@
   }
   #bombBlast.show {
     opacity: 1;
-    transform: translateX(-50%) scale(1);
+    transform: translateY(0) scale(1);
   }
   #skillBlast {
     position: absolute;
-    top: 94px;
-    left: 50%;
-    transform: translateX(-50%) scale(0.85);
-    background: rgba(16, 30, 55, 0.92);
+    right: 14px;
+    bottom: 18px;
+    transform: translateY(6px) scale(0.85);
+    background: rgba(16, 30, 55, 0.85);
     border: 1px solid rgba(120,190,255,0.5);
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 11px;
     font-weight: 700;
     color: #cfe8ff;
     opacity: 0;
@@ -146,7 +146,7 @@
   }
   #skillBlast.show {
     opacity: 1;
-    transform: translateX(-50%) scale(1);
+    transform: translateY(0) scale(1);
   }
   #bigAnnounce {
     position: absolute;
@@ -295,7 +295,7 @@
 </head>
 <body>
   <h1>☕ 당신에게 커피를 살 수 있는 영광이 있기를!</h1>
-  <div class="sub">인원수를 고르고 보드를 클릭해 출발 위치를 선택한 뒤 드롭! 공들이 깔때기를 타고 내려가 먼저 도착하는 순서가 기록돼요</div>
+  <div class="sub">인원수를 고르고 보드를 클릭해 출발 위치를 선택한 뒤 드롭! 공들이 우주 지렁이 몸속 통로를 타고 내려가 먼저 도착하는 순서가 기록돼요</div>
 
   <div id="playerCountRow">
     👤 인원수: <input type="number" id="playerCount" min="1" max="50" value="5"> 명 (최대 50명)
@@ -315,9 +315,6 @@
 
   <div id="board-wrap">
     <canvas id="board" width="460" height="640"></canvas>
-    <div id="windGust"></div>
-    <div id="bombBlast">💥 폭탄이 터졌습니다!</div>
-    <div id="skillBlast"></div>
     <div id="bigAnnounce"></div>
   </div>
 
@@ -328,7 +325,7 @@
   <div id="result"></div>
   <div id="leaderboard"></div>
 
-  <div class="hint">깔때기 구조라 아래로 갈수록 좁아져요. 목 부분(neck)은 매우 좁아서 공이 많을수록 서로 부딪히며 순위가 갈릴 수 있어요.</div>
+  <div class="hint">우주 지렁이 몸속 통로예요. 마디마다 부풀었다 좁아지길 반복하며 아래로 갈수록 전체적으로 좁아져요. 결승선 직전 목 부분은 매우 좁아서 공이 많을수록 서로 부딪히며 순위가 갈릴 수 있어요.</div>
 
 <script>
 const canvas = document.getElementById('board');
@@ -340,19 +337,25 @@ const H = 1425;                     // 전체 맵(월드) 높이 - 카메라가 
 const MARGIN = 40;
 const PLAY_LEFT = MARGIN, PLAY_RIGHT = W - MARGIN;
 const CENTER_X = (PLAY_LEFT + PLAY_RIGHT) / 2;
-const NECK_Y = H - 160;      // 이 높이부터는 좁은 목(neck) 구간
+const PLAY_HALF_WIDTH = (PLAY_RIGHT - PLAY_LEFT) / 2;
+const NECK_Y = H - 160;      // 이 높이부터는 좁은 목(neck) 구간 - 결승선 직전 구간
 const NECK_WIDTH = 70;       // 목 부분 폭 (공 5개가 한번에 못 지나갈 정도)
 const NECK_LEFT = CENTER_X - NECK_WIDTH / 2;
 const NECK_RIGHT = CENTER_X + NECK_WIDTH / 2;
 const CEILING_Y = 4;
 
+// 🪱 우주 지렁이 몸속: 마디마다 부풀었다 좁아지는 물결 모양의 통로
+const WORM_SEGMENTS = 3;       // 몸통 마디(부풀었다 좁아지는) 반복 횟수
+const WORM_BULGE_AMP = 60;     // 마디가 부풀어오르는 최대 진폭
+
 function funnelBounds(y) {
   if (y >= NECK_Y) return { left: NECK_LEFT, right: NECK_RIGHT };
   const t = Math.max(0, y) / NECK_Y;
-  return {
-    left: PLAY_LEFT + (NECK_LEFT - PLAY_LEFT) * t,
-    right: PLAY_RIGHT - (PLAY_RIGHT - NECK_RIGHT) * t
-  };
+  const baseHalf = PLAY_HALF_WIDTH + (NECK_WIDTH / 2 - PLAY_HALF_WIDTH) * t; // 전체적으로 좁아지는 추세선
+  const amp = WORM_BULGE_AMP * (1 - t * 0.85);                              // 아래로 갈수록 마디 진폭이 줄어듦
+  const wave = Math.cos(t * Math.PI * 2 * WORM_SEGMENTS);                   // 맨 위는 볼록하게 시작
+  const half = Math.max(NECK_WIDTH / 2, Math.min(PLAY_HALF_WIDTH, baseHalf + amp * wave));
+  return { left: CENTER_X - half, right: CENTER_X + half };
 }
 
 const GRAVITY = 550;
@@ -649,6 +652,129 @@ function drawShiba(ts) {
 
   ctx.restore();
 }
+
+// 🪱 지렁이 몸속 통로 채우기: 살빛 그라데이션 + 마디 주름 텍스처
+function drawWormBody(ts) {
+  ctx.save();
+  ctx.beginPath();
+  for (let y = 0; y <= H; y += 10) {
+    const b = funnelBounds(y);
+    if (y === 0) ctx.moveTo(b.left, y); else ctx.lineTo(b.left, y);
+  }
+  const bottomB = funnelBounds(H);
+  ctx.lineTo(bottomB.left, H);
+  ctx.lineTo(bottomB.right, H);
+  for (let y = H; y >= 0; y -= 10) {
+    const b = funnelBounds(y);
+    ctx.lineTo(b.right, y);
+  }
+  ctx.closePath();
+
+  const grad = ctx.createLinearGradient(PLAY_LEFT, 0, PLAY_RIGHT, 0);
+  grad.addColorStop(0, 'rgba(150,70,68,0.9)');
+  grad.addColorStop(0.5, 'rgba(224,148,130,0.55)');
+  grad.addColorStop(1, 'rgba(150,70,68,0.9)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // 중앙에서 은은하게 맥동하는 살빛 하이라이트 (숨쉬는 듯한 느낌)
+  ctx.save();
+  ctx.clip();
+  const pulse = 0.5 + 0.5 * Math.sin(ts / 1100);
+  const centerGlow = ctx.createLinearGradient(PLAY_LEFT, 0, PLAY_RIGHT, 0);
+  centerGlow.addColorStop(0, 'rgba(255,210,190,0)');
+  centerGlow.addColorStop(0.5, `rgba(255,210,190,${0.12 + 0.07 * pulse})`);
+  centerGlow.addColorStop(1, 'rgba(255,210,190,0)');
+  ctx.fillStyle = centerGlow;
+  ctx.fillRect(0, 0, W, H);
+
+  // 지렁이 몸통 옆면을 따라 흐르는 밝은 하이라이트 줄무늬
+  ctx.strokeStyle = 'rgba(255,225,210,0.4)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (let y = 0; y <= H; y += 10) {
+    const b = funnelBounds(y);
+    const stripeX = b.left + (b.right - b.left) * 0.22;
+    if (y === 0) ctx.moveTo(stripeX, y); else ctx.lineTo(stripeX, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // 마디 사이 오목한 지점마다 주름(고리) 텍스처
+  const pinchTs = [1 / 6, 3 / 6, 5 / 6];
+  for (const t of pinchTs) {
+    const y = t * NECK_Y;
+    const b = funnelBounds(y);
+    ctx.strokeStyle = 'rgba(90,35,35,0.5)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(b.left, y - 4);
+    ctx.quadraticCurveTo(CENTER_X, y + 10, b.right, y - 4);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,150,190,0.18)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(b.left, y - 8);
+    ctx.quadraticCurveTo(CENTER_X, y + 5, b.right, y - 8);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// 🪱 입구 = 지렁이 몸통 표면 위에 그려지는 입(V자 홈)과 눈 - 별도 도형이 아니라 통로 표면에 바로 그려서 몸통과 이어짐
+const WORM_MOUTH_DEPTH = 78;
+
+function drawWormFace(ts) {
+  const chew = 0.85 + 0.15 * Math.sin(ts / 650); // 오물오물 씹는 듯한 애니메이션
+  const topB = funnelBounds(0);
+  const maxHalfW = (topB.right - topB.left) / 2 - 18;
+  const mouthHalfW = Math.min(66 * chew, maxHalfW);
+
+  // 입 (통로 맨 위 표면에 파인 V자 홈 - 몸통과 완전히 하나로 이어진 형태)
+  ctx.save();
+  const mouthGrad = ctx.createLinearGradient(CENTER_X, 0, CENTER_X, WORM_MOUTH_DEPTH);
+  mouthGrad.addColorStop(0, 'rgba(70,22,22,0.85)');
+  mouthGrad.addColorStop(1, 'rgba(70,22,22,0.1)');
+  ctx.fillStyle = mouthGrad;
+  ctx.beginPath();
+  ctx.moveTo(CENTER_X - mouthHalfW, 0);
+  ctx.quadraticCurveTo(CENTER_X, WORM_MOUTH_DEPTH + 14, CENTER_X + mouthHalfW, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = `rgba(255,225,210,${0.55 + ceilingFlash * 0.3})`;
+  ctx.lineWidth = ceilingFlash > 0.05 ? 3.6 : 2.6;
+  ctx.beginPath();
+  ctx.moveTo(CENTER_X - mouthHalfW, 0);
+  ctx.quadraticCurveTo(CENTER_X, WORM_MOUTH_DEPTH + 14, CENTER_X + mouthHalfW, 0);
+  ctx.stroke();
+  ctx.restore();
+  if (ceilingFlash > 0) ceilingFlash = Math.max(0, ceilingFlash - 0.08);
+
+  // 눈 (입 옆, 통로 표면 위)
+  const eyeX = CENTER_X + mouthHalfW + 34;
+  const eyeY = 38;
+  ctx.save();
+  ctx.fillStyle = '#fff6f2';
+  ctx.beginPath();
+  ctx.ellipse(eyeX, eyeY, 13, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(120,45,40,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  const pupilWobble = Math.sin(ts / 1300) * 2;
+  ctx.fillStyle = '#2a1c1c';
+  ctx.beginPath();
+  ctx.arc(eyeX + pupilWobble, eyeY + 2, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  ctx.arc(eyeX + pupilWobble - 2, eyeY - 1, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+
 
 // 🔥 도지 불뿜기: 10초마다 무작위 플레이어에게 파이어볼을 날려 태움 (탄 공은 서서히 작아짐)
 const DOGE_FIRE_INTERVAL = 10.0;
@@ -1012,27 +1138,7 @@ function pickLastPlaceBall() {
   return last;
 }
 
-// 📸 10초마다 3초간 꼴등 공을 비추고 원래 앵글(1등 추적)로 복귀
-const LAST_PLACE_CAM_INTERVAL = 10.0;
-const LAST_PLACE_CAM_DURATION = 3.0;
-let lastPlaceCamTimer = 6.0;
-let cameraOverride = null; // {ballId, timer}
-
-function triggerLastPlaceCam() {
-  const target = pickLastPlaceBall();
-  if (!target) return;
-  cameraOverride = { ballId: target.id, timer: LAST_PLACE_CAM_DURATION };
-  announceSkill(`📸 꼴찌 ${target.name} 공을 비춥니다!`);
-}
-
 function computeCameraTarget() {
-  if (cameraOverride && cameraOverride.timer > 0) {
-    const b = balls.find(x => x && x.id === cameraOverride.ballId && !x.landed);
-    if (b) {
-      return Math.max(0, Math.min(H - VIEWPORT_H, b.y - VIEWPORT_H * 0.4));
-    }
-    cameraOverride = null; // 대상이 이미 도착했거나 사라지면 조기 종료
-  }
   const leader = pickLeadingBall();
   let targetY;
   if (leader) {
@@ -1051,10 +1157,6 @@ function computeCameraTarget() {
 }
 
 function updateCamera(dt) {
-  if (cameraOverride) {
-    cameraOverride.timer -= dt;
-    if (cameraOverride.timer <= 0) cameraOverride = null;
-  }
   const target = computeCameraTarget();
   cameraY += (target - cameraY) * Math.min(1, dt * 3.2);
 }
@@ -2043,13 +2145,7 @@ const windGustEl = document.getElementById('windGust');
 let windGustTimeout = null;
 
 function announceGust(dirIndex, mag) {
-  const strength = mag / WIND_MAX;
-  if (strength < 0.22) return;
-  const desc = strength > 0.7 ? '강한' : strength > 0.45 ? '적당한' : '약한';
-  windGustEl.textContent = `💨 ${desc} 바람이 ${WIND_DIR_LABELS[dirIndex]}으로 붑니다!`;
-  windGustEl.classList.add('show');
-  clearTimeout(windGustTimeout);
-  windGustTimeout = setTimeout(() => windGustEl.classList.remove('show'), 1500);
+  // 화면을 가리는 알림 팝업은 표시하지 않음 (바람 상태는 상단 바람 표시줄에서 확인 가능)
 }
 
 function updateWind(dt) {
@@ -2131,16 +2227,11 @@ function drawWindParticles() {
 const skillBlastEl = document.getElementById('skillBlast');
 let skillBlastTimeout = null;
 function announceSkill(text) {
-  skillBlastEl.textContent = text;
-  skillBlastEl.classList.add('show');
-  clearTimeout(skillBlastTimeout);
-  skillBlastTimeout = setTimeout(() => skillBlastEl.classList.remove('show'), 1400);
+  // 화면을 가리는 알림 팝업은 표시하지 않음
 }
 
 function announceBlast() {
-  bombBlastEl.classList.add('show');
-  clearTimeout(bombBlastTimeout);
-  bombBlastTimeout = setTimeout(() => bombBlastEl.classList.remove('show'), 1100);
+  // 화면을 가리는 알림 팝업은 표시하지 않음
 }
 
 function spawnWallBurst(x, y) {
@@ -2522,8 +2613,6 @@ function resetGame() {
   missiles = [];
   globalShrinkFlash = null;
   gameEnded = false;
-  lastPlaceCamTimer = 6.0;
-  cameraOverride = null;
 
   // 바람 초기화
   windX = 0; windY = 0;
@@ -2566,8 +2655,6 @@ function startDrop() {
   missiles = [];
   globalShrinkFlash = null;
   gameEnded = false;
-  lastPlaceCamTimer = 6.0;
-  cameraOverride = null;
 
   const usableLeft = PLAY_LEFT + 40, usableRight = PLAY_RIGHT - 40;
   const usableWidth = usableRight - usableLeft;
@@ -2791,13 +2878,19 @@ function drawBallShape(b) {
     ctx.closePath();
   }
   ctx.fillStyle = b.color;
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 5;
   ctx.fill();
+  ctx.shadowBlur = 0;
   if (t > 0) {
     ctx.fillStyle = `rgba(200,40,40,${t * 0.5})`;
     ctx.fill();
   }
-  ctx.strokeStyle = hits > 0 ? '#ff5a3c' : 'rgba(255,255,255,0.6)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(15,10,20,0.75)';
+  ctx.lineWidth = 3.4;
+  ctx.stroke();
+  ctx.strokeStyle = hits > 0 ? '#ff5a3c' : 'rgba(255,255,255,0.95)';
+  ctx.lineWidth = 1.6;
   ctx.stroke();
   ctx.restore();
 
@@ -2857,35 +2950,36 @@ function draw(ts) {
   drawShiba(ts);
   drawWindParticles();
 
-  // 좌우 깔때기 벽 (항상 표시, 부딪히면 잠깐 밝아짐)
+  drawWormBody(ts);
+
+  // 좌우 벽 (우주 지렁이 몸속 내벽 - 마디마다 물결치는 유기적 형태, 은은하게 맥동하는 빛)
   ctx.save();
-  ctx.shadowColor = 'rgba(157,214,255,0.7)';
-  ctx.shadowBlur = 7;
-  ctx.strokeStyle = `rgba(180, 224, 255, ${0.65 + wallFlash * 0.35})`;
+  const wallPulse = 0.5 + 0.5 * Math.sin(ts / 900);
+  ctx.shadowColor = 'rgba(255,140,120,0.7)';
+  ctx.shadowBlur = 8 + wallPulse * 5;
+  ctx.strokeStyle = `rgba(255,175,160, ${0.6 + wallFlash * 0.35 + wallPulse * 0.08})`;
   ctx.lineWidth = wallFlash > 0.05 ? 5 : 3;
+  ctx.lineJoin = 'round';
+  const WALL_SAMPLE_STEP = 10;
   ctx.beginPath();
-  ctx.moveTo(PLAY_LEFT, 0);
-  ctx.lineTo(NECK_LEFT, NECK_Y);
-  ctx.lineTo(NECK_LEFT, H);
-  ctx.moveTo(PLAY_RIGHT, 0);
-  ctx.lineTo(NECK_RIGHT, NECK_Y);
-  ctx.lineTo(NECK_RIGHT, H);
+  for (let y = 0; y <= H; y += WALL_SAMPLE_STEP) {
+    const b = funnelBounds(y);
+    if (y === 0) ctx.moveTo(b.left, y); else ctx.lineTo(b.left, y);
+  }
+  ctx.lineTo(funnelBounds(H).left, H);
+  ctx.stroke();
+  ctx.beginPath();
+  for (let y = 0; y <= H; y += WALL_SAMPLE_STEP) {
+    const b = funnelBounds(y);
+    if (y === 0) ctx.moveTo(b.right, y); else ctx.lineTo(b.right, y);
+  }
+  ctx.lineTo(funnelBounds(H).right, H);
   ctx.stroke();
   ctx.restore();
   if (wallFlash > 0) wallFlash = Math.max(0, wallFlash - 0.08);
 
-  // 맨 위 천장
-  ctx.save();
-  ctx.shadowColor = 'rgba(157,214,255,0.8)';
-  ctx.shadowBlur = 8;
-  ctx.strokeStyle = `rgba(180, 224, 255, ${0.65 + ceilingFlash * 0.35})`;
-  ctx.lineWidth = ceilingFlash > 0.05 ? 5 : 3;
-  ctx.beginPath();
-  ctx.moveTo(PLAY_LEFT, CEILING_Y);
-  ctx.lineTo(PLAY_RIGHT, CEILING_Y);
-  ctx.stroke();
-  ctx.restore();
-  if (ceilingFlash > 0) ceilingFlash = Math.max(0, ceilingFlash - 0.08);
+  // 맨 위 입구 = 지렁이 입 (눈 + 이빨 + 입술)
+  drawWormFace(ts);
 
   // pegs (우주 쓰레기 장애물)
   for (const p of pegs) {
@@ -2920,10 +3014,14 @@ function draw(ts) {
   ctx.lineTo(NECK_RIGHT, H - 4);
   ctx.stroke();
   ctx.restore();
-  ctx.fillStyle = '#cfd6ff';
-  ctx.font = '11px sans-serif';
+  ctx.save();
+  ctx.fillStyle = '#e6ebff';
+  ctx.font = 'bold 20px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('FINISH', CENTER_X, H - 8);
+  ctx.shadowColor = 'rgba(143,163,255,0.8)';
+  ctx.shadowBlur = 8;
+  ctx.fillText('FINISH', CENTER_X, H - 12);
+  ctx.restore();
 
   // 공들
   if (balls.length > 0) {
@@ -3042,12 +3140,6 @@ function loop(ts) {
     if (ufoTimer <= 0) {
       ufoTimer = UFO_INTERVAL;
       triggerUFO();
-    }
-
-    lastPlaceCamTimer -= dt;
-    if (lastPlaceCamTimer <= 0) {
-      lastPlaceCamTimer = LAST_PLACE_CAM_INTERVAL;
-      if (!cameraOverride) triggerLastPlaceCam();
     }
 
     if (dropStartTime) {
