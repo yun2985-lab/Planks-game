@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>당신에게 커피를 살 수 있는 영광이 있기를! - Belcat Edition v8</title>
+<title>당신에게 커피를 살 수 있는 영광이 있기를! - Belcat Edition v10</title>
 <style>
 :root{
   --bg:#080915; --panel:#11162d; --panel2:#171d3b; --line:rgba(160,195,255,.22);
@@ -74,7 +74,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:460/640;border-radius:1
 <body>
 <div class="app">
   <div class="hero">
-    <div><h1>☕ 당신에게 커피를 살 수 있는 영광이 있기를!</h1><p>우주 지렁이 레이스 · Belcat Edition v8</p></div>
+    <div><h1>☕ 당신에게 커피를 살 수 있는 영광이 있기를!</h1><p>우주 지렁이 레이스 · Belcat Edition v10</p></div>
     <div class="badge">VELKOZLAB MINI GAME</div>
   </div>
 
@@ -134,9 +134,9 @@ const BELCAT_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAbgAAAHHCAYAAA
 const belcatImg = new Image(); belcatImg.src = BELCAT_SRC;
 
 const canvas=document.getElementById('board'),ctx=canvas.getContext('2d');
-const W=460,VH=640,PLAY_L=42,PLAY_R=418,CX=230;
-const NECK_W=92, NECK_L=CX-NECK_W/2, NECK_R=CX+NECK_W/2;
-const ELBOW_START_Y=1420, ELBOW_R=110, TUBE_HALF=46;
+const W=460,VH=640,PLAY_L=70,PLAY_R=390,CX=230;
+const NECK_W=82, NECK_L=CX-NECK_W/2, NECK_R=CX+NECK_W/2;
+const ELBOW_START_Y=1420, ELBOW_R=110, TUBE_HALF=41;
 const ELBOW_CX=CX+ELBOW_R, ELBOW_CY=ELBOW_START_Y;
 const HORIZ_CY=ELBOW_START_Y+ELBOW_R;
 const HORIZ_START_X=CX+ELBOW_R;
@@ -198,7 +198,7 @@ function drawSkillEffects(){
   const active=state.elapsed%6<2;
   ctx.fillStyle=active?'#ffd39e':'#d4b8ef';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText(active?'↶ 교차로 역풍':'교차로 · 회전 관문',ELBOW_CX-25,ELBOW_CY-22);
 }
-const sentries=Array.from({length:6},(_,i)=>({x:HORIZ_START_X+340+Math.floor(i/2)*430,y:HORIZ_CY+(i%2?82:-82),timer:2+i*.9,anim:0,phase:i*1.7}));
+const sentries=Array.from({length:6},(_,i)=>({x:HORIZ_START_X+340+Math.floor(i/2)*430,y:HORIZ_CY+(i%2?74:-74),timer:2+i*.9,anim:0,phase:i*1.7}));
 const verticalSentries=[280,500,790,1170].flatMap((y,j)=>[-1,1].map((side,i)=>({x:side<0?funnelBounds(y).left-20:funnelBounds(y).right+20,y,timer:3+j+i*1.7,anim:0,phase:j*1.4+i,vertical:true})));
 function skillKnockback(b,dx,dy,power=720){
   if((b.hitGuard||0)>0)return;
@@ -233,7 +233,14 @@ function funnelBounds(y){
   return{left:CX-half,right:CX+half}
 }
 function tubeWave(x,t){const u=clamp((x-HORIZ_START_X)/180,0,1);return Math.sin((x-HORIZ_START_X)/165-t/520)*14*u*u*(3-2*u)}
-function playerCount(){const n=clamp(parseInt(ui.count.value)||8,1,50);ui.count.value=n;return n}
+function readPlayerCount(commit=false){
+  const raw=String(ui.count.value||'').trim();
+  const parsed=parseInt(raw,10);
+  const n=clamp(Number.isFinite(parsed)?parsed:8,1,50);
+  if(commit)ui.count.value=n;
+  return n;
+}
+function playerCount(){return readPlayerCount(false)}
 function ballInfo(n){return Array.from({length:n},(_,i)=>({name:`P${i+1}`,color:`hsl(${Math.round(i*360/n)},74%,61%)`}))}
 function refreshLegend(){
   const info=ballInfo(playerCount());
@@ -293,7 +300,14 @@ function updateObstacleButtons(){
   obstacleBtns.forEach(b=>{b.disabled=state.mode==='RACING'||rem<=0;b.classList.toggle('active',state.selected===b.dataset.type)})
 }
 obstacleBtns.forEach(b=>b.onclick=()=>{if(b.disabled)return;state.selected=state.selected===b.dataset.type?null:b.dataset.type;updateObstacleButtons()});
-ui.count.onchange=()=>{refreshLegend();updateObstacleButtons();renderSkillChoices()};
+ui.count.addEventListener('input',()=>{
+  if(state.mode!=='PLACEMENT')return;
+  refreshLegend();updateObstacleButtons();renderSkillChoices();
+});
+ui.count.addEventListener('change',()=>{
+  readPlayerCount(true);
+  refreshLegend();updateObstacleButtons();renderSkillChoices();
+});
 ui.reset.onclick=reset;
 
 function placeObstacle(type,x,y){
@@ -315,7 +329,7 @@ canvas.addEventListener('click',e=>{
 
 ui.start.onclick=()=>{
   if(state.mode==='RACING')return;
-  const n=playerCount(),info=ballInfo(n);balls=[];state.finishOrder=[];ui.board.innerHTML='';
+  const n=readPlayerCount(true),info=ballInfo(n);balls=[];state.finishOrder=[];ui.board.innerHTML='';
   const maxPerRow=15,spacing=19;
   for(let i=0;i<n;i++){const row=Math.floor(i/maxPerRow),col=i%maxPerRow,rowN=Math.min(maxPerRow,n-row*maxPerRow),sx=state.dropX-(rowN-1)*spacing/2;
     balls.push({id:i,name:info[i].name,color:info[i].color,x:clamp(sx+col*spacing,PLAY_L+20,PLAY_R-20),y:30+row*19,vx:rand(-25,25),vy:0,r:BASE_R,skill:skillChoices[i]||'magnet',skillTimer:6,magnetTime:0,
@@ -458,13 +472,13 @@ function applyLaserHit(b,dx,dy){
   if(Math.random()<.30){b.r=Math.min(34,b.r*1.35);b.grow=Math.max(b.grow||0,2);burst(b.x,b.y,'255,205,115',16);announce(`🔮 R 변이 · ${b.name} 커져라!`)}
 }
 function triggerQ(){
-  const t=pickHorizontalTarget();if(!t)return;belcatAnimB=.85;belcatActionB='Q';const sx=HORIZ_START_X+95,sy=HORIZ_CY-92;
+  const t=pickHorizontalTarget();if(!t)return;belcatAnimB=.85;belcatActionB='Q';const sx=HORIZ_START_X+95,sy=HORIZ_CY-84;
   for(const off of [-.22,0,.22])projectiles.push({type:'q',x:sx,y:sy,tx:t.id,angleOff:off,life:3});announce(`💜 벨켓 Q · 플라즈마 분열`)
 }
 function triggerR(){
   const t=pickHorizontalTarget();if(!t)return;
   belcatAnimB=.85;belcatActionB='R';
-  const sx=HORIZ_START_X+120, sy=HORIZ_CY-92;
+  const sx=HORIZ_START_X+120, sy=HORIZ_CY-84;
   laser={age:0,life:2.2,x:sx,y:sy,targetId:t.id,angle:Math.atan2(t.y-sy,t.x-sx),locked:false};
   announce(`🔮 벨켓 R 조준 → ${t.name}`);
 }
@@ -657,7 +671,7 @@ function drawElbowDynamic(ts){
   ctx.restore();
 }
 function drawFinish(ts){
-  const y=HORIZ_CY+tubeWave(FINISH_X,ts);for(let i=0;i<10;i++){ctx.fillStyle=i%2?'#202033':'#fff';ctx.fillRect(FINISH_X-8,y-TUBE_HALF+i*9,16,9)}
+  const y=HORIZ_CY+tubeWave(FINISH_X,ts);for(let i=0;i<10;i++){ctx.fillStyle=i%2?'#202033':'#fff';ctx.fillRect(FINISH_X-8,y-TUBE_HALF+i*8.2,16,8.2)}
   ctx.fillStyle='rgba(255,215,100,.14)';ctx.fillRect(FINISH_X+8,y-TUBE_HALF,GOAL_X-FINISH_X-8,TUBE_HALF*2);
   ctx.fillStyle='#ffd86a';ctx.font='24px sans-serif';ctx.fillText('🏆',(FINISH_X+GOAL_X)/2-14,y+8)
 }
@@ -680,7 +694,7 @@ function draw(ts){
   drawElbowDynamic(ts);drawPegs();drawObstacles(ts);drawWalkers();drawHealer();drawMole();drawMissiles();drawFinish(ts);
   // Belcat A replaces old Shiba, Belcat B controls the L-corner with Q/R
   drawBelcat(356,650,.25,false,'A',ts);
-  drawBelcat(HORIZ_START_X+98,HORIZ_CY-96,.22,true,'B',ts);
+  drawBelcat(HORIZ_START_X+98,HORIZ_CY-88,.22,true,'B',ts);
   for(const c of [...sentries,...verticalSentries])drawBelcat(c.x,c.y,.25,false,'C',ts,c);
   drawProjectiles();
   for(const p of particles){ctx.fillStyle=`rgba(${p.c},${1-p.age/p.life})`;ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,Math.PI*2);ctx.fill()}
