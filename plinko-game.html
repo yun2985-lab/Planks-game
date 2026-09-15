@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>당신에게 커피를 살 수 있는 영광이 있기를! - Belcat Edition v10</title>
+<title>당신에게 커피를 살 수 있는 영광이 있기를! - Belcat Edition v16</title>
 <style>
 :root{
   --bg:#080915; --panel:#11162d; --panel2:#171d3b; --line:rgba(160,195,255,.22);
@@ -74,7 +74,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:460/640;border-radius:1
 <body>
 <div class="app">
   <div class="hero">
-    <div><h1>☕ 당신에게 커피를 살 수 있는 영광이 있기를!</h1><p>우주 지렁이 레이스 · Belcat Edition v10</p></div>
+    <div><h1>☕ 당신에게 커피를 살 수 있는 영광이 있기를!</h1><p>우주 지렁이 레이스 · Belcat Edition v16</p></div>
     <div class="badge">VELKOZLAB MINI GAME</div>
   </div>
 
@@ -158,6 +158,8 @@ let fireTimer=4.5/1.5, qTimer=6.0, rTimer=12.0, lightningTimer=7.0, globalFlash=
 let lightTimer=7.0, tornadoTimer=11.0, event45Fired=false, event60Fired=false;
 let walkers=[], walkerTimer=2.2, healer=null, healerTimer=9.0, mole=null, moleTimer=5.5;
 let missiles=[], belcatAnimA=0, belcatAnimB=0, belcatActionA='idle', belcatActionB='idle';
+let goalBelcatEvent={active:false,announced:false,t:0,shotTimer:6,shotT:0,targetId:null,hit:new Set()};
+let wallHits=[];
 const skillChoices=[];
 const playerSkills={magnet:{name:'🧲 자석',desc:'6초마다 가까운 상대 1명을 3초간 끌어당깁니다.'},ice:{name:'❄ 얼리기',desc:'6초마다 상대 1명을 2초간 움직이지 못하게 합니다.'},grow:{name:'🟣 커져라',desc:'6초마다 상대 1명의 반지름을 한 단계(+3) 키웁니다. 최대 34.'}};
 function renderSkillChoices(){
@@ -198,6 +200,75 @@ function drawSkillEffects(){
   const active=state.elapsed%6<2;
   ctx.fillStyle=active?'#ffd39e':'#d4b8ef';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText(active?'↶ 교차로 역풍':'교차로 · 회전 관문',ELBOW_CX-25,ELBOW_CY-22);
 }
+function respawnBall(b){
+  const row=Math.floor(b.id/15), col=b.id%15, rowN=Math.min(15,balls.length-row*15), spacing=19;
+  const sx=state.dropX-(rowN-1)*spacing/2;
+  b.x=clamp(sx+col*spacing,PLAY_L+20,PLAY_R-20);b.y=30+row*19;
+  b.vx=rand(-24,24);b.vy=0;b.zone='vertical';b.freeze=0;b.burn=0;b.slow=0;b.knockTime=0;b.hitGuard=.35;
+  b.recorded=false;b.landed=false;b.lastProg=b.y;
+  burst(b.x,b.y,'255,150,245',16);
+}
+function laserImpact(x,y){
+  burst(x,y,'255,90,255',58);
+  burst(x,y,'255,235,135',32);
+  particles.push({x,y,vx:0,vy:0,age:0,life:.55,c:'255,245,255',ring:true,r:6,top:true});
+  particles.push({x,y,vx:0,vy:0,age:0,life:.85,c:'205,70,255',ring:true,r:14,top:true});
+  particles.push({x,y,vx:0,vy:0,age:0,life:.35,c:'255,120,255',flash:true,r:34,top:true});
+}
+function isLowerHorizontalBall(b){
+  if(b.landed||b.recorded||b.zone!=='horizontal'||b.x<HORIZ_START_X+90)return false;
+  const hb=horizontalBounds(b.x,performance.now());
+  return b.y>=hb.top-b.r-6&&b.y<=hb.bot+b.r+6;
+}
+function lineDistance(px,py,ax,ay,bx,by){
+  const dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy||1;
+  const u=clamp(((px-ax)*dx+(py-ay)*dy)/len,0,1);
+  return Math.hypot(px-(ax+dx*u),py-(ay+dy*u));
+}
+function goalBelcatPos(){
+  const t=goalBelcatEvent.t||0, enter=clamp(t/4.2,0,1);
+  return {x:GOAL_X+160-enter*108,y:HORIZ_CY-8+Math.sin(t*4.2)*4+Math.sin(t*10)*3*(1-enter)};
+}
+function pickGoalBelcatTarget(){
+  const pos=goalBelcatPos();
+  const candidates=balls.filter(isLowerHorizontalBall);
+  return candidates.length?candidates[Math.floor(Math.random()*candidates.length)]:null;
+}
+function goalBelcatBeam(){
+  const pos=goalBelcatPos(), target=balls.find(b=>b.id===goalBelcatEvent.targetId&&!b.landed&&!b.recorded);
+  const sx=pos.x-66, sy=pos.y-2;
+  if(target)return {sx,sy,ex:target.x,ey:target.y,target};
+  return {sx,sy,ex:HORIZ_START_X-28,ey:HORIZ_CY,target:null};
+}
+function updateGoalBelcatEvent(dt){
+  if(!goalBelcatEvent.active&&state.elapsed>=10&&state.finishOrder.length>=1&&balls.some(isLowerHorizontalBall)){
+    goalBelcatEvent={active:true,announced:true,t:0,shotTimer:2.2,shotT:0,targetId:null,hit:new Set()};announce('보스 몬스터가 등장합니다');
+  }
+  if(!goalBelcatEvent.active)return;
+  goalBelcatEvent.t+=dt;
+  if(goalBelcatEvent.t<4.2)return;
+  goalBelcatEvent.shotTimer-=dt;
+  if(goalBelcatEvent.shotTimer<=0){
+    goalBelcatEvent.shotTimer+=6;
+    const target=pickGoalBelcatTarget();
+    if(target){goalBelcatEvent.shotT=.95;goalBelcatEvent.targetId=target.id;goalBelcatEvent.hit=new Set();announce(`💜 보스 벨켓 레이저 → ${target.name}`)}
+  }
+  if(goalBelcatEvent.shotT>0){
+    goalBelcatEvent.shotT=Math.max(0,goalBelcatEvent.shotT-dt);
+    const beam=goalBelcatBeam();
+    for(const b of balls){
+      if(b.landed||b.recorded||goalBelcatEvent.hit.has(b.id))continue;
+      if(!isLowerHorizontalBall(b))continue;
+      if(lineDistance(b.x,b.y,beam.sx,beam.sy,beam.ex,beam.ey)<b.r+15){
+        goalBelcatEvent.hit.add(b.id);laserImpact(b.x,b.y);
+        const dx=b.x-beam.sx,dy=b.y-beam.sy,d=Math.hypot(dx,dy)||1;
+        b.vx=dx/d*2400;b.vy=dy/d*2400;b.knockTime=1.35;b.hitGuard=.35;
+        deformWall('h',b.x,dy<0?-1:1,10);
+        shake=Math.max(shake,22);announce(`💜 보스 레이저 · ${b.name} 초강력 넉백!`);
+      }
+    }
+  }
+}
 const sentries=Array.from({length:6},(_,i)=>({x:HORIZ_START_X+340+Math.floor(i/2)*430,y:HORIZ_CY+(i%2?74:-74),timer:2+i*.9,anim:0,phase:i*1.7}));
 const verticalSentries=[280,500,790,1170].flatMap((y,j)=>[-1,1].map((side,i)=>({x:side<0?funnelBounds(y).left-20:funnelBounds(y).right+20,y,timer:3+j+i*1.7,anim:0,phase:j*1.4+i,vertical:true})));
 function skillKnockback(b,dx,dy,power=720){
@@ -224,15 +295,34 @@ let sctx=staticCanvas.getContext('2d');
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rand(a,b){return a+Math.random()*(b-a)}
+function wallOffset(kind,pos,side){
+  let off=0;
+  for(const h of wallHits){
+    if(h.kind!==kind||h.side!==side)continue;
+    const d=(pos-h.pos)/h.w;
+    off+=h.power*Math.exp(-d*d);
+  }
+  return clamp(off,0,kind==='v'?24:28);
+}
+function deformWall(kind,pos,side,energy=1){
+  const power=clamp(energy,0.7,7);
+  wallHits.push({kind,pos,side,power,w:kind==='v'?72:96,age:0});
+  if(wallHits.length>80)wallHits.shift();
+  burst(kind==='v'?(side<0?funnelBounds(pos).left:funnelBounds(pos).right):pos,kind==='v'?pos:(side<0?HORIZ_CY-TUBE_HALF:HORIZ_CY+TUBE_HALF),'255,185,220',10);
+}
 function funnelBounds(y){
   if(y>=ELBOW_START_Y)return{left:NECK_L,right:NECK_R};
   const t=clamp(y/ELBOW_START_Y,0,1);
   const full=(PLAY_R-PLAY_L)/2, neck=NECK_W/2;
   const wave=Math.cos(t*Math.PI*6)*54*(1-t*.82);
   const half=clamp(full+(neck-full)*t+wave,neck,full);
-  return{left:CX-half,right:CX+half}
+  return{left:CX-half-wallOffset('v',y,-1),right:CX+half+wallOffset('v',y,1)}
 }
 function tubeWave(x,t){const u=clamp((x-HORIZ_START_X)/180,0,1);return Math.sin((x-HORIZ_START_X)/165-t/520)*14*u*u*(3-2*u)}
+function horizontalBounds(x,t){
+  const wave=tubeWave(x,t);
+  return {top:HORIZ_CY-TUBE_HALF+wave-wallOffset('h',x,-1),bot:HORIZ_CY+TUBE_HALF+wave+wallOffset('h',x,1)};
+}
 function readPlayerCount(commit=false){
   const raw=String(ui.count.value||'').trim();
   const parsed=parseInt(raw,10);
@@ -288,7 +378,7 @@ function reset(){
   balls=[];bombs=[];particles=[];projectiles=[];laser=null;windmills=[
     {x:CX-45,y:350,a:0.00,s:0.85,hp:100},{x:CX+40,y:460,a:0.47,s:-0.89,hp:100},{x:CX,y:590,a:0.94,s:0.93,hp:100},{x:CX-45,y:710,a:1.41,s:-0.97,hp:100},{x:CX+40,y:850,a:1.88,s:1.01,hp:100},{x:CX,y:970,a:2.35,s:-1.05,hp:100},{x:CX-45,y:1080,a:2.82,s:1.09,hp:100},{x:CX+40,y:1200,a:3.29,s:-1.13,hp:100},{x:CX,y:1320,a:3.76,s:1.17,hp:100},
   ...([2.78,2.05].map((a,i)=>({x:ELBOW_CX+Math.cos(a)*ELBOW_R,y:ELBOW_CY+Math.sin(a)*ELBOW_R,a:0,s:i?-1.15:1.1,hp:100})))];ufos=[{x:CX,y:620,t:7}];mushrooms=[];windX=windY=0;windTimer=.6;shake=0;fireTimer=4.5/1.5;qTimer=6;rTimer=12;lightningTimer=7;globalFlash=0;
-  walkers=[];walkerTimer=2.2;healer=null;healerTimer=9.0;mole=null;moleTimer=5.5;missiles=[];
+  walkers=[];walkerTimer=2.2;healer=null;healerTimer=9.0;mole=null;moleTimer=5.5;missiles=[];goalBelcatEvent={active:false,announced:false,t:0,shotTimer:6,shotT:0,hit:new Set()};
 lightTimer=7.0;tornadoTimer=11.0;event45Fired=false;event60Fired=false;
 [...sentries,...verticalSentries].forEach((c,i)=>{c.timer=(2+i*.9)/(c.vertical?1.5:1);c.anim=0});belcatAnimA=0;belcatAnimB=0;belcatActionA='idle';belcatActionB='idle';
 buildPegs();buildStatic();ui.count.disabled=false;ui.start.disabled=false;ui.status.textContent='배치 단계';ui.timer.textContent='0.0';ui.board.innerHTML='';
@@ -386,8 +476,7 @@ function elbowPhysics(b,dt){
   // 수평 통로 입구에 확실히 들어온 뒤에만 horizontal 상태로 전환.
   if(ang<=Math.PI/2+0.07 && b.x>=HORIZ_START_X-8){
     b.zone='horizontal';
-    const top=HORIZ_CY-TUBE_HALF+tubeWave(b.x,performance.now());
-    const bot=HORIZ_CY+TUBE_HALF+tubeWave(b.x,performance.now());
+    const hb=horizontalBounds(b.x,performance.now()), top=hb.top, bot=hb.bot;
     b.y=clamp(b.y,top+b.r+2,bot-b.r-2);
     b.vx=Math.max(55,Math.abs(b.vx)*.72);
   }
@@ -401,8 +490,8 @@ function physics(b,dt){
 
   if(b.zone==='vertical'){
     const bd=funnelBounds(b.y);
-    if(b.x-b.r<bd.left){b.x=bd.left+b.r;b.vx=Math.abs(b.vx)*WALL_REST}
-    if(b.x+b.r>bd.right){b.x=bd.right-b.r;b.vx=-Math.abs(b.vx)*WALL_REST}
+    if(b.x-b.r<bd.left){const e=Math.abs(b.vx)/210;b.x=bd.left+b.r;b.vx=Math.abs(b.vx)*WALL_REST;if(e>.85)deformWall('v',b.y,-1,e)}
+    if(b.x+b.r>bd.right){const e=Math.abs(b.vx)/210;b.x=bd.right-b.r;b.vx=-Math.abs(b.vx)*WALL_REST;if(e>.85)deformWall('v',b.y,1,e)}
     if(b.y-b.r<2){b.y=2+b.r;b.vy=Math.abs(b.vy)*WALL_REST}
     // only test nearby pegs
     for(const p of pegs){if(Math.abs(p.y-b.y)>18||Math.abs(p.x-b.x)>p.hw+b.r+4)continue;const c=rectColl(b,p);if(c){b.x+=c.nx*c.pen;b.y+=c.ny*c.pen;const dot=b.vx*c.nx+b.vy*c.ny;if(dot<0){b.vx-=1.42*dot*c.nx;b.vy-=1.42*dot*c.ny;b.vx+=rand(-40,40)}}}
@@ -413,9 +502,9 @@ function physics(b,dt){
     }
   }else if(b.zone==='elbow') elbowPhysics(b,dt);
   else{
-    const top=HORIZ_CY-TUBE_HALF+tubeWave(b.x,performance.now()),bot=HORIZ_CY+TUBE_HALF+tubeWave(b.x,performance.now());
-    if(b.y-b.r<top){b.y=top+b.r;b.vy=Math.abs(b.vy)*WALL_REST}
-    if(b.y+b.r>bot){b.y=bot-b.r;b.vy=-Math.abs(b.vy)*WALL_REST}
+    const hb=horizontalBounds(b.x,performance.now()),top=hb.top,bot=hb.bot;
+    if(b.y-b.r<top){const e=Math.abs(b.vy)/210;b.y=top+b.r;b.vy=Math.abs(b.vy)*WALL_REST;if(e>.85)deformWall('h',b.x,-1,e)}
+    if(b.y+b.r>bot){const e=Math.abs(b.vy)/210;b.y=bot-b.r;b.vy=-Math.abs(b.vy)*WALL_REST;if(e>.85)deformWall('h',b.x,1,e)}
     b.vx+=145*dt;b.vy+=Math.sin(performance.now()/520+b.id)*30*dt;
     if(b.x-b.r<HORIZ_START_X-8){
       b.x=HORIZ_START_X-8+b.r;
@@ -610,6 +699,12 @@ function updateWind(dt){
   const m=Math.hypot(windX,windY);ui.wind.textContent=m<12?'💨 고요':`💨 ${windX>0?'→':'←'} ${'▮'.repeat(Math.max(1,Math.round(m/35)))}`
 }
 function updateCamera(dt){
+  if(goalBelcatEvent.active&&goalBelcatEvent.t<4.2){
+    const pos=goalBelcatPos();
+    const tx=clamp(pos.x-W*.58,0,WORLD_W-W), ty=clamp(pos.y-VH*.52,0,WORLD_H-VH);
+    state.cameraX+=(tx-state.cameraX)*Math.min(1,dt*4.6);state.cameraY+=(ty-state.cameraY)*Math.min(1,dt*4.6);
+    return;
+  }
   let leader=null;for(const b of balls){if(b.landed)continue;if(!leader||((b.zone==='horizontal'?1200+b.x:b.y)>(leader.zone==='horizontal'?1200+leader.x:leader.y)))leader=b}
   let tx=0,ty=0;if(leader){if(leader.zone==='horizontal'){tx=leader.x-W*.33;ty=HORIZ_CY-VH*.56}else{ty=leader.y-VH*.38}}
   state.cameraX+= (clamp(tx,0,WORLD_W-W)-state.cameraX)*Math.min(1,dt*3.5);state.cameraY+=(clamp(ty,0,WORLD_H-VH)-state.cameraY)*Math.min(1,dt*3.5)
@@ -643,6 +738,44 @@ function drawBelcat(x,y,scale=.28,flip=false,role='A',ts=0,actor=null){
   if(charge>0){ctx.strokeStyle=`rgba(255,170,255,${charge})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(Math.cos(aim)*21,Math.sin(aim)*21,5+charge*10,0,Math.PI*2);ctx.stroke();}
   ctx.restore();
 }
+function drawGoalBelcatEvent(ts){
+  if(!goalBelcatEvent.active)return;
+  const t=goalBelcatEvent.t, pos=goalBelcatPos(), x=pos.x, y=pos.y;
+  const firing=goalBelcatEvent.shotT>0;
+  const charge=!firing&&t>=4.2&&goalBelcatEvent.shotTimer<1.2;
+  drawBelcat(x,y,.72,true,'G',ts,{phase:3.3,anim:(firing||charge) ? .85 : 0});
+  ctx.save();
+  if(firing||charge){
+    const p=firing?1:clamp((1.2-goalBelcatEvent.shotTimer)/1.2,0,1);
+    const {sx,sy,ex,ey}=goalBelcatBeam();
+    ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=`rgba(255,110,255,${.35+.55*p})`;ctx.lineWidth=firing?18:8+8*p;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.strokeStyle=`rgba(255,235,255,${.45+.45*p})`;ctx.lineWidth=firing?5:2+3*p;
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+    for(let i=0;i<5;i++){
+      const u=(i*.21+ts/820)%1, lx=sx+(ex-sx)*u, ly=sy+(ey-sy)*u;
+      ctx.fillStyle=`rgba(255,170,255,${.3+.3*Math.sin(ts/120+i)})`;
+      ctx.beginPath();ctx.arc(lx,ly,2+i%2,0,Math.PI*2);ctx.fill();
+    }
+  }
+  ctx.restore();
+  ctx.fillStyle='#ffd5ff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+  ctx.fillText(firing?'보스 레이저!':'보스 몬스터 등장',x-6,y-94);
+}
+function drawTopEffects(){
+  for(const p of particles){
+    if(!p.top)continue;
+    const alpha=1-p.age/p.life;
+    if(p.flash){
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*(1+p.age/p.life));
+      g.addColorStop(0,`rgba(${p.c},${alpha*.8})`);g.addColorStop(1,`rgba(${p.c},0)`);
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r*(1+p.age/p.life),0,Math.PI*2);ctx.fill();
+    }else if(p.ring){
+      ctx.strokeStyle=`rgba(${p.c},${alpha})`;ctx.lineWidth=4+alpha*8;ctx.beginPath();ctx.arc(p.x,p.y,p.r+p.age/p.life*46,0,Math.PI*2);ctx.stroke();
+    }
+  }
+}
 function drawPegs(){
   for(const p of pegs){
     if(p.y<state.cameraY-12||p.y>state.cameraY+VH+12)continue;
@@ -662,8 +795,8 @@ function drawElbowDynamic(ts){
   for(let y=0;y<ELBOW_START_Y;y+=8){const b=funnelBounds(y);outer.push([b.left,y]);inner.push([b.right,y]);}
   outer.push([NECK_L,ELBOW_START_Y]);inner.push([NECK_R,ELBOW_START_Y]);
   for(let i=1;i<=32;i++){const a=Math.PI-i/32*Math.PI/2;outer.push([ELBOW_CX+Math.cos(a)*(ELBOW_R+TUBE_HALF),ELBOW_CY+Math.sin(a)*(ELBOW_R+TUBE_HALF)]);inner.push([ELBOW_CX+Math.cos(a)*(ELBOW_R-TUBE_HALF),ELBOW_CY+Math.sin(a)*(ELBOW_R-TUBE_HALF)]);}
-  for(let x=HORIZ_START_X+8;x<GOAL_X;x+=8){const wave=tubeWave(x,ts);outer.push([x,HORIZ_CY+TUBE_HALF+wave]);inner.push([x,HORIZ_CY-TUBE_HALF+wave]);}
-  outer.push([GOAL_X,HORIZ_CY+TUBE_HALF+tubeWave(GOAL_X,ts)]);inner.push([GOAL_X,HORIZ_CY-TUBE_HALF+tubeWave(GOAL_X,ts)]);
+  for(let x=HORIZ_START_X+8;x<GOAL_X;x+=8){const hb=horizontalBounds(x,ts);outer.push([x,hb.bot]);inner.push([x,hb.top]);}
+  {const hb=horizontalBounds(GOAL_X,ts);outer.push([GOAL_X,hb.bot]);inner.push([GOAL_X,hb.top]);}
   ctx.save();ctx.beginPath();outer.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));[...inner].reverse().forEach(([x,y])=>ctx.lineTo(x,y));ctx.closePath();
   const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,'#bc7186');g.addColorStop(.65,'#ac5c76');g.addColorStop(1,'#a05270');ctx.fillStyle=g;ctx.fill();
   ctx.strokeStyle='rgba(255,192,207,.55)';ctx.lineWidth=2;
@@ -671,8 +804,8 @@ function drawElbowDynamic(ts){
   ctx.restore();
 }
 function drawFinish(ts){
-  const y=HORIZ_CY+tubeWave(FINISH_X,ts);for(let i=0;i<10;i++){ctx.fillStyle=i%2?'#202033':'#fff';ctx.fillRect(FINISH_X-8,y-TUBE_HALF+i*8.2,16,8.2)}
-  ctx.fillStyle='rgba(255,215,100,.14)';ctx.fillRect(FINISH_X+8,y-TUBE_HALF,GOAL_X-FINISH_X-8,TUBE_HALF*2);
+  const y=HORIZ_CY+tubeWave(FINISH_X,ts), hb=horizontalBounds(FINISH_X,ts);for(let i=0;i<10;i++){ctx.fillStyle=i%2?'#202033':'#fff';ctx.fillRect(FINISH_X-8,hb.top+i*((hb.bot-hb.top)/10),16,(hb.bot-hb.top)/10)}
+  ctx.fillStyle='rgba(255,215,100,.14)';ctx.fillRect(FINISH_X+8,hb.top,GOAL_X-FINISH_X-8,hb.bot-hb.top);
   ctx.fillStyle='#ffd86a';ctx.font='24px sans-serif';ctx.fillText('🏆',(FINISH_X+GOAL_X)/2-14,y+8)
 }
 function drawProjectiles(){
@@ -695,10 +828,18 @@ function draw(ts){
   // Belcat A replaces old Shiba, Belcat B controls the L-corner with Q/R
   drawBelcat(356,650,.25,false,'A',ts);
   drawBelcat(HORIZ_START_X+98,HORIZ_CY-88,.22,true,'B',ts);
+  drawGoalBelcatEvent(ts);
   for(const c of [...sentries,...verticalSentries])drawBelcat(c.x,c.y,.25,false,'C',ts,c);
   drawProjectiles();
-  for(const p of particles){ctx.fillStyle=`rgba(${p.c},${1-p.age/p.life})`;ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,Math.PI*2);ctx.fill()}
-  for(const b of balls)drawBall(b);drawSkillEffects();
+  for(const p of particles){
+    const alpha=1-p.age/p.life;
+    if(p.ring){
+      ctx.strokeStyle=`rgba(${p.c},${alpha})`;ctx.lineWidth=2+alpha*4;ctx.beginPath();ctx.arc(p.x,p.y,p.r+p.age/p.life*30,0,Math.PI*2);ctx.stroke();
+    }else{
+      ctx.fillStyle=`rgba(${p.c},${alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,2.2,0,Math.PI*2);ctx.fill();
+    }
+  }
+  for(const b of balls)drawBall(b);drawSkillEffects();drawTopEffects();
   if(state.mode==='PLACEMENT'&&!balls.length){const n=playerCount(),info=ballInfo(n),max=15,sp=19;ctx.globalAlpha=.48;for(let i=0;i<n;i++){const row=Math.floor(i/max),col=i%max,rowN=Math.min(max,n-row*max),sx=state.dropX-(rowN-1)*sp/2,x=clamp(sx+col*sp,PLAY_L+20,PLAY_R-20),y=30+row*19;ctx.fillStyle=info[i].color;ctx.beginPath();ctx.arc(x,y,BASE_R,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1}
   if(globalFlash>0){ctx.fillStyle=`rgba(180,80,255,${globalFlash*.28})`;ctx.fillRect(0,0,WORLD_W,WORLD_H)}
   ctx.restore()
@@ -710,7 +851,7 @@ function tick(ts){
   if(belcatAnimA>0){belcatAnimA=Math.max(0,belcatAnimA-dt);if(belcatAnimA===0)belcatActionA='idle'}
   if(belcatAnimB>0){belcatAnimB=Math.max(0,belcatAnimB-dt);if(belcatAnimB===0)belcatActionB='idle'}
   if(state.mode==='RACING'){
-    state.elapsed=(ts-state.startTs)/1000;ui.timer.textContent=state.elapsed.toFixed(1);updateEvents(dt);updateProjectiles(dt);updatePlayerSkills(dt);
+    state.elapsed=(ts-state.startTs)/1000;ui.timer.textContent=state.elapsed.toFixed(1);updateEvents(dt);updateProjectiles(dt);updatePlayerSkills(dt);updateGoalBelcatEvent(dt);
     for(const u of ufos)if(u.pull>0)u.pull-=dt;
     for(const w of windmills)w.a+=w.s*dt*(.25+.75*w.hp/100);
     const sub=3;for(let k=0;k<sub;k++){for(const b of balls)physics(b,dt/sub);resolveBalls()}
