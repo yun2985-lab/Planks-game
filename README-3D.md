@@ -1,31 +1,21 @@
-# 벨켓의 작은 레이스 — 3D Edition 01
+# Belcat 3D Race — v02
 
-플레이: https://yun2985-lab.github.io/Planks-game/plinko-3d.html
+Play: https://yun2985-lab.github.io/Planks-game/plinko-3d.html
 
-기존 v16의 게임 규칙과 평면 충돌 계산을 3D 디오라마에 연결한 첫 버전입니다. 기존 plinko-game.html과 메인 진입점은 유지됩니다.
+The original index.html and plinko-game.html remain available. This edition uses the bundled Three.js renderer and the existing game simulation.
 
-## 변경
+## Changes
+- Richer warm wood, purple Belcats, and mint/gold accents with reduced overexposure.
+- Simulation runs at 62% of the previous pace; fixed-step physics and interpolated rendering remain.
+- Original leader-follow camera restored, with course scoring adapted to the longer layout. Manual and overview controls remain.
+- Course centerline doubled exactly: 3092.7876 to 6185.5752. Original Belcat counts retained and distributed over the longer course.
+- Course minimap, leader percentage, top three positions, and completed count.
+- Attack anticipation, recoil, muzzle flashes, projectile trails, and impact rings driven by actual simulation events.
+- Boss hits grant 14 simulation seconds of boss protection, displayed as a mint halo, to prevent repeated beam knockback trapping trailing balls.
+- Mobile nameplates, dock status, and replay control refined.
 
-- Three.js r170을 저장소 안에 포함해 CDN 의존성 제거.
-- 목재 테이블, 경사 코스, 사선 정사영 카메라, 그림자와 파스텔 장난감 그래픽.
-- 공 표정, 벨켓 눈 깜빡임·호흡·촉수 관절 애니메이션.
-- 원본 충돌 범위에 맞춰 변형되는 코스·벽; 실제 스킬 상태의 레이저·투사체·풍차·버섯·보스 표시.
-- 모바일 드래그·핀치·전체 보기·추적 보기·그래픽 품질 전환.
-- 고정 120Hz 물리 스텝과 위치 보간. 페이지를 숨기면 시뮬레이션 시간은 진행하지 않습니다.
-
-## 검증
-
-- 1/8/50명 고정 난수 시뮬레이션에서 모두 완주, 순위 중복 없음, 좌표·3D 변환값 유한.
-- 테스트용 Chromium/SwiftShader, 430×932 화면: WebGL 초기화·레이스 시작·전체 카메라·품질 전환·초기화·50명 스킬과 시작 검증. 앱 JavaScript 및 콘솔 오류 없음.
-- 화면 이미지를 확인하고 벨켓 눈 가림 및 카메라 방향 수정.
-
-## 미검증과 한계
-
-- 실제 Android 기기의 FPS·발열·핀치 체감은 미검증입니다. 소프트웨어 GPU 테스트 FPS를 휴대폰 성능으로 해석하지 않습니다.
-- 물리까지 3D인 게임이 아닙니다. 기존 평면 물리를 높이가 있는 경사 코스에 표시합니다.
-- 시각 품질은 첫 구현 단계이며 첨부 영상과 동등한 완성도를 검증한 것은 아닙니다.
-- 고정 스텝 도입으로 v16과 난수·충돌 타이밍이 달라질 수 있습니다.
-
-## 다음 판단
-
-휴대폰에서 기본 8명으로 한 판 실행합니다. 공의 식별·시점·프레임 유지가 만족스러우면 벨켓 모델과 충돌 연출을 개선합니다. 지속 30FPS 미만이거나 가림이 심하면 먼저 품질·카메라를 조정합니다.
+## Validation
+Deterministic simulation checks with 1, 8, and 50 participants all finished, with finite coordinates and unique rankings. Exact 2x course length and 0.62 simulation rate asserted.
+A local software-WebGL browser checked rendering, race start, overview, quality toggle, reset, settings, and 50-player start without JavaScript errors.
+Reference footage was reviewed for tabletop framing, warm color, and motion direction. Visual parity with the reference is not claimed.
+Actual phone FPS and perceived pacing still require device verification. Software-renderer FPS is not a phone benchmark.
