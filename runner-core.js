@@ -2,7 +2,7 @@ export const SURFACE=130,DEPTH=64,CAVE=160,MAX_PLAYERS=5;
 export const COLORS=['#a344e0','#f16f94','#46c9be','#f6c653','#6d9aef'];
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function centre(s,phase=0){return phase===2?Math.sin(s*.065)*2:Math.sin(s*.065)*2.5*Math.sin(Math.PI*s/SURFACE);}
-export function position(p){if(p.phase===0)return{x:centre(p.s)+p.lane*3,y:0,z:p.s};if(p.phase===1)return{x:0+p.lane*(1-p.fall)*1.3,y:-DEPTH*p.fall*p.fall,z:SURFACE};return{x:centre(p.s,2)+p.lane*3,y:-DEPTH,z:SURFACE+p.s};}
+export function position(p){if(p.phase===0)return{x:centre(p.s)+p.lane*3,y:0,z:p.s};if(p.phase===1)return{x:centre(SURFACE-3.5)*(1-p.fall)+p.lane*3,y:-DEPTH*(.7171875*p.fall+.2828125*p.fall*p.fall),z:SURFACE-3.5+3.5*(1-Math.exp(-p.fall*10))/(1-Math.exp(-10))};return{x:centre(p.s,2)+p.lane*3,y:-DEPTH,z:SURFACE+p.s};}
 export const rocks=Array.from({length:22},(_,i)=>({phase:i<10?0:2,s:12+(i%12)*12,lane:Math.sin(i*13.2)*.78}));
 export const gems=Array.from({length:32},(_,i)=>({id:i,phase:i<14?0:2,s:8+(i%18)*8,lane:Math.sin(i*2.3)*.62}));
 export const cats=[{phase:0,s:35,lane:-1.5},{phase:0,s:77,lane:1.5},{phase:0,s:109,lane:-1.5},{phase:2,s:32,lane:1.5},{phase:2,s:88,lane:-1.5},{phase:2,s:132,lane:1.5}];
@@ -17,7 +17,7 @@ export function step(g,dt){if(g.mode!=='running'||g.paused)return;dt=clamp(dt,0,
   p.s+=17*(p.slow>0?.45:1)*dt;
   for(const r of rocks)if(r.phase===p.phase&&Math.abs(p.s-r.s)<.65&&Math.abs(p.lane-r.lane)<.21&&p.guard<=0){p.s=Math.max(0,p.s-1.5);p.slow=.65;p.guard=1.1;p.hits++;effect(g,p,'hit');}
   for(const gem of gems)if(gem.phase===p.phase&&Math.abs(p.s-gem.s)<.9&&Math.abs(p.lane-gem.lane)<.3&&!p.gems.includes(gem.id)){p.gems.push(gem.id);p.score++;effect(g,p,'gem');}
-  if(p.phase===0&&p.s>=SURFACE){p.s=SURFACE;p.phase=1;p.fall=0;effect(g,p,'dive');}
+  if(p.phase===0&&p.s>=SURFACE-3.5){p.s=SURFACE-3.5;p.phase=1;p.fall=0;effect(g,p,'dive');}
   if(p.phase===2&&p.s>=CAVE){p.s=CAVE;p.phase=3;p.finished=true;p.finishTime=g.time;effect(g,p,'finish');}
  }
  for(let i=0;i<cats.length;i++){g.catTimers[i]-=dt;if(g.catTimers[i]>0)continue;g.catTimers[i]=2.7;const c=cats[i],targets=g.players.filter(p=>!p.finished&&p.phase===c.phase&&Math.abs(p.s-c.s)<18);if(!targets.length)continue;const target=targets[(g.seq+i)%targets.length],dx=(target.lane-c.lane)*3,dz=target.s-c.s,len=Math.hypot(dx,dz)||1;g.shots.push({id:++g.seq,phase:c.phase,s:c.s,x:c.lane*3,vx:dx/len*35,vs:dz/len*35,age:0});effect(g,{...c},'fire');}
