@@ -1,13 +1,13 @@
-export const SURFACE=260,DEPTH=64,CAVE=320,MAX_PLAYERS=5;
+export const SURFACE=390,DEPTH=64,CAVE=480,MAX_PLAYERS=5;
 export const COLORS=['#a344e0','#f16f94','#46c9be','#f6c653','#6d9aef'];
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function centre(s,phase=0){return phase===2?Math.sin(s*.065)*2:Math.sin(s*.065)*2.5*Math.sin(Math.PI*s/SURFACE);}
 export function position(p){if(p.phase===0)return{x:centre(p.s)+p.lane*3,y:0,z:p.s};if(p.phase===1)return{x:centre(SURFACE-3.5)*(1-p.fall)+p.lane*3,y:-DEPTH*(.7171875*p.fall+.2828125*p.fall*p.fall),z:SURFACE-3.5+3.5*(1-Math.exp(-p.fall*10))/(1-Math.exp(-10))};return{x:centre(p.s,2)+p.lane*3,y:-DEPTH,z:SURFACE+p.s};}
-export const rocks=Array.from({length:44},(_,i)=>({phase:i<20?0:2,s:12+(i%24)*12,lane:Math.sin(i*13.2)*.78}));
+export const rocks=Array.from({length:66},(_,i)=>({phase:i<30?0:2,s:12+(i%36)*12,lane:Math.sin(i*13.2)*.78}));
 export const gems=[];
 export const fallObstacles=[{depth:14,lane:-.55,width:.33},{depth:29,lane:.5,width:.36},{depth:44,lane:-.12,width:.4},{depth:56,lane:.65,width:.28}];
-export const boostZones=[{id:0,phase:0,s:50,lane:-.7},{id:1,phase:0,s:142,lane:.7},{id:2,phase:0,s:214,lane:0},{id:3,phase:2,s:56,lane:.7},{id:4,phase:2,s:168,lane:-.7},{id:5,phase:2,s:264,lane:0}];
-export const cats=Array.from({length:12},(_,i)=>({phase:i<6?0:2,s:30+(i%6)*(i<6?40:49),lane:i%2?1.5:-1.5}));
+export const boostZones=[{id:0,phase:0,s:75,lane:-.7},{id:1,phase:0,s:213,lane:.7},{id:2,phase:0,s:321,lane:0},{id:3,phase:2,s:84,lane:.7},{id:4,phase:2,s:252,lane:-.7},{id:5,phase:2,s:396,lane:0}];
+export const cats=Array.from({length:18},(_,i)=>({phase:i<9?0:2,s:30+(i%9)*(i<9?40:49),lane:i%2?1.5:-1.5}));
 export function createGame(ids){if(ids.length<1||ids.length>5)throw Error('참가 인원은 1~5명입니다.');return{version:2,time:0,mode:'lobby',paused:false,players:ids.map((id,i)=>({id,color:COLORS[i],name:'P'+(i+1),phase:0,s:0,lane:(i-(ids.length-1)/2)*.36,input:0,vx:0,boost:0,boostZone:null,elasticity:.85,wallCooldown:0,fall:0,guard:0,slow:0,score:0,gems:[],hits:0,finished:false,finishTime:null})),shots:[],warnings:[],effects:[],catTimers:cats.map((_,i)=>1+i*.19),seq:0};}
 export function startGame(g){g.mode='running';g.time=0;}
 export function input(g,id,value){const p=g.players.find(p=>p.id===id);if(p)p.input=Number.isFinite(value)?clamp(value,-1,1):0;}
