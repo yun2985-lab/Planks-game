@@ -13,5 +13,5 @@ export class Session{
  start(){if(this.mode==='solo'||this.mode==='host'){this.game=createGame(this.members);startGame(this.game);this.broadcast();this.notify();}}
  steer(v){if(this.mode==='guest'){if(this.connection?.open)this.connection.send({type:'input',value:v});}else input(this.game,this.id,v);}
  pause(){if(this.mode==='guest')return;this.game.paused=!this.game.paused;this.broadcast();this.notify();}
- tick(dt){if(this.mode==='guest'){if(performance.now()-this.lastState>5000&&this.game.mode==='running'){this.message('방장 응답 대기 중…');}return;}if(!['solo','host'].includes(this.mode))return;this.acc+=Math.min(dt,.15);while(this.acc>=1/60){step(this.game,1/60);this.acc-=1/60;}this.sendClock+=dt;if(this.mode==='host'&&this.sendClock>=.05){this.sendClock=0;this.broadcast();} }
+ tick(dt){if(this.mode==='guest'){if(performance.now()-this.lastState>5000&&this.game.mode==='running'){if(!this.waitNotice||performance.now()-this.waitNotice>5000){this.waitNotice=performance.now();this.message('방장 응답 대기 중…');}}return;}if(!['solo','host'].includes(this.mode))return;this.acc+=Math.min(dt,.15);while(this.acc>=1/60){step(this.game,1/60);this.acc-=1/60;}this.sendClock+=dt;if(this.mode==='host'&&this.sendClock>=.05){this.sendClock=0;this.broadcast();} }
 }
