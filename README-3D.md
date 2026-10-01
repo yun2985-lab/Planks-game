@@ -1,21 +1,19 @@
-# Belcat 3D Race — v02
+# Belcat 3D Race — v05
 
-Play: https://yun2985-lab.github.io/Planks-game/plinko-3d.html
+Play: https://yun2985-lab.github.io/Planks-game/plinko-3d.html?v=05
 
-The original index.html and plinko-game.html remain available. This edition uses the bundled Three.js renderer and the existing game simulation.
-
-## Changes
-- Richer warm wood, purple Belcats, and mint/gold accents with reduced overexposure.
-- Simulation runs at 62% of the previous pace; fixed-step physics and interpolated rendering remain.
-- Original leader-follow camera restored, with course scoring adapted to the longer layout. Manual and overview controls remain.
-- Course centerline doubled exactly: 3092.7876 to 6185.5752. Original Belcat counts retained and distributed over the longer course.
-- Course minimap, leader percentage, top three positions, and completed count.
-- Attack anticipation, recoil, muzzle flashes, projectile trails, and impact rings driven by actual simulation events.
-- Boss hits grant 14 simulation seconds of boss protection, displayed as a mint halo, to prevent repeated beam knockback trapping trailing balls.
-- Mobile nameplates, dock status, and replay control refined.
+## Current edition
+- Full viewport game with compact high-contrast minimap; settings and results open on demand. No ball nameplates.
+- Continuous sand ground, winding purple course edges, stone obstacles and plants. Bridge supports removed.
+- One real opening in the terrain at the finish, with an open shaft and dark bottom. Entering balls transition into falling, then finish; follow camera closes in on the hole with falling streaks.
+- Simulation rate 1.40, exactly twice v04's 0.70. Fixed 120Hz integration remains. Actual race duration depends on collisions and attacks.
+- Belcat projectiles run at 580 simulation units/s (v04: 340), with white-core purple bolts, long trails, muzzle bursts and impact rings. Swept hit testing remains.
+- Doubled course length, original leader camera state and boss recovery protection retained.
 
 ## Validation
-Deterministic simulation checks with 1, 8, and 50 participants all finished, with finite coordinates and unique rankings. Exact 2x course length and 0.62 simulation rate asserted.
-A local software-WebGL browser checked rendering, race start, overview, quality toggle, reset, settings, and 50-player start without JavaScript errors.
-Reference footage was reviewed for tabletop framing, warm color, and motion direction. Visual parity with the reference is not claimed.
-Actual phone FPS and perceived pacing still require device verification. Software-renderer FPS is not a phone benchmark.
+Deterministic 1-, 8-, and 50-player simulations all completed with finite coordinates and unique rankings. Course length and speed assertions pass.
+Software-WebGL browser verified terrain with one hole, falling transition below the ground, settings and follow/overview controls without JavaScript errors.
+Approach and fall preview images use actual renderer with test-controlled positions; they are not an unedited full-race recording.
+Phone FPS, perceived speed and visual parity with the reference remain unverified. Software-renderer FPS is not a phone benchmark.
+
+Original index.html/plinko-game.html remain available.
