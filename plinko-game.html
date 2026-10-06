@@ -60,7 +60,7 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
   </div>
   <!-- No backdrop: taps outside this small panel still belong to the game. -->
   <section id="frame-diagnostics" role="dialog" aria-labelledby="diagnostics-title" hidden>
-    <div class="diagnostic-header"><h2 id="diagnostics-title">화면 설정 · v15</h2><button id="diagnostics-close" type="button" aria-label="화면 설정 닫기">닫기</button></div>
+    <div class="diagnostic-header"><h2 id="diagnostics-title">화면 설정 · v16</h2><button id="diagnostics-close" type="button" aria-label="화면 설정 닫기">닫기</button></div>
     <span id="screen-status" role="status" aria-live="polite">전체화면으로 더 크게 볼 수 있어요</span>
     <button id="resolution-button" type="button" aria-controls="canvas" aria-pressed="false" aria-describedby="resolution-note" disabled>선명도 1×</button>
     <span id="performance" title="Godot 게임 프레임 실측값 · 기기와 장면에 따라 달라집니다">FPS 측정 대기</span>
@@ -70,7 +70,7 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
     <p id="diagnostics-cpu"></p>
     <p id="diagnostics-renderer"></p>
     <p id="diagnostics-canvas"></p>
-    <p id="resolution-note" class="diagnostic-note">선명도 1×는 기본 부하입니다. 1.5×는 같은 크기의 화면을 더 촘촘히 그리지만 처리 픽셀이 2.25배여서 FPS가 낮아질 수 있어요. 끊기면 1×로 되돌려 주세요. 새로 열면 1×로 시작합니다.</p>
+    <p id="resolution-note" class="diagnostic-note">기본은 1.5× 균형입니다. 버튼을 누르면 2× 고선명 → 1× 저부하 → 1.5× 균형으로 바뀝니다. 1× 대비 처리 픽셀은 1.5×에서 약 2.25배, 2×에서 4배이므로 FPS가 낮아질 수 있어요. 끊기면 1×를 선택해 주세요. 화면 크기와 터치 위치는 같습니다. 새로 열면 1.5×로 시작하며, 게임 준비 전에는 안전하게 1×를 사용합니다.</p>
     <p class="diagnostic-note">CPU는 스크립트 구간별 평활값입니다. 그리기는 명령 생성 시간이며 GPU 시간은 측정하지 않습니다. HUD는 프레임당 값이고, 메인 기타는 계산·HUD·진단 발행을 제외합니다. 엔진 내부 처리·브라우저 대기 등은 포함하지 않아 합계가 전체 프레임 시간은 아닙니다. 렌더 횟수는 UI를 포함한 2D 화면의 최근 렌더 프레임입니다.</p>
     <p class="diagnostic-note">p95·p99는 각각 95%·99%의 프레임이 이 값 이내라는 뜻입니다. 최대값이 크게 튀면 순간 끊김을 의심할 수 있어요.</p>
     <p class="diagnostic-note">게임 FPS는 실제 Godot 콜백 간격의 평활값입니다. 화면에 보이는 동안 긴 멈춤도 포함하고, 백그라운드 전환·복귀 간격은 제외합니다. rAF는 브라우저 콜백 간격이며 실제 패널 주사율(Hz)은 확인할 수 없습니다. 이 창이 열려 있을 때만 최근 최대 2초를 추가 측정합니다. 계산은 60Hz, 화면은 보간합니다. 진단값은 기기 안에서만 표시합니다.</p>
@@ -89,17 +89,17 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
   </div>
 </div>
 <noscript>이 게임은 JavaScript가 필요합니다.</noscript>
-<script src="plinko-godot/v15-2fd144fbe6aa/index.js?v=2fd144fbe6aa"></script>
+<script src="plinko-godot/v16-8b87e329bd9c/index.js?v=8b87e329bd9c"></script>
 <script>
 'use strict';
-const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"plinko-godot/v15-2fd144fbe6aa/index","experimentalVK":false,"fileSizes":{"plinko-godot/v15-2fd144fbe6aa/plinko-v16-2fd144fbe6aa.pck":2307164,"plinko-godot/v15-2fd144fbe6aa/index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"plinko-godot/v16-8b87e329bd9c/index","experimentalVK":false,"fileSizes":{"plinko-godot/v16-8b87e329bd9c/plinko-v16-8b87e329bd9c.pck":2306956,"plinko-godot/v16-8b87e329bd9c/index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 // Policy 2 overwrites parent sizing with window.innerWidth/Height every frame.
 // Policy 0 lets this shell own backing size and safe areas. Compact controls
-// share the native header without reserving another row. Default 1x bounds fill
-// work; optional 1.5x is paired with
-// Godot's CSS-sized logical viewport, never a blind devicePixelRatio multiplier.
+// share the native header without reserving another row. Balanced 1.5x starts
+// only after Godot supplies CSS-sized logical scaling. Optional 1x reduces fill
+// work; 2x is user-selected. Never use a blind devicePixelRatio multiplier.
 config.canvasResizePolicy=0;
-config.mainPack="plinko-godot/v15-2fd144fbe6aa/plinko-v16-2fd144fbe6aa.pck";
+config.mainPack="plinko-godot/v16-8b87e329bd9c/plinko-v16-8b87e329bd9c.pck";
 const engine=new Engine(config);
 const shell=document.getElementById('game-shell');
 const viewport=document.getElementById('game-viewport');
@@ -140,14 +140,29 @@ let cadenceIndex=0;
 let pageHidden=false;
 let frameVisibilityCallback=null;
 let viewportCallback=null;
-let renderScale=1;
+// This page-session preference survives resize/lifecycle/bridge reconnects only.
+// No storage is read or written: a newly opened game starts balanced at 1.5x.
+const resolutionModes=[
+  {scale:1,name:'저부하',pixels:'1'},
+  {scale:1.5,name:'균형',pixels:'약 2.25'},
+  {scale:2,name:'고선명',pixels:'4'}
+];
+let selectedRenderScale=1.5;
+let renderScale=1; // Keep bootstrap GUI/input safe until the logical handshake.
 let notifiedLogicalWidth=0;
 let notifiedLogicalHeight=0;
+function nextResolutionMode(){
+  const index=resolutionModes.findIndex(mode=>mode.scale===selectedRenderScale);
+  return resolutionModes[(index+1)%resolutionModes.length];
+}
 function updateResolutionControl(){
-  resolutionButton.textContent='선명도 '+renderScale+'×\n'+(renderScale>1?'픽셀 2.25배':'기본 부하');
+  const mode=resolutionModes.find(mode=>mode.scale===renderScale);
+  const next=nextResolutionMode();
+  resolutionButton.textContent='선명도 '+mode.scale+'×\n'+mode.name+' · 픽셀 '+mode.pixels+'배';
   resolutionButton.setAttribute('aria-pressed',String(renderScale>1));
-  resolutionButton.setAttribute('aria-label',renderScale>1?'선명도 1.5배 적용 중. 누르면 기본 1배로 변경':'선명도 기본 1배. 누르면 1.5배로 변경, 처리 픽셀 2.25배로 FPS가 낮아질 수 있음');
-  resolutionButton.title='1× 기본 / 1.5× 선명 · 처리 픽셀 2.25배 · 끊기면 1×';
+  resolutionButton.setAttribute('aria-label',!viewportCallback?'게임 준비 중. 준비 후 선명도 '+selectedRenderScale+'배 적용':
+    '선명도 '+mode.scale+'배 '+mode.name+' 적용 중. 누르면 '+next.scale+'배 '+next.name+'로 변경. 1배 대비 처리 픽셀 '+next.pixels+'배');
+  resolutionButton.title='1× 저부하 / 1.5× 균형 (기본, 픽셀 약 2.25배) / 2× 고선명 (픽셀 4배) · 끊기면 1×';
   resolutionButton.disabled=!viewportCallback||gameFailed;
 }
 // Godot retains this callback and supplies native content scaling. Do not enable
@@ -155,13 +170,14 @@ function updateResolutionControl(){
 window.plinkoSetViewportCallback=callback=>{
   viewportCallback=typeof callback==='function'?callback:null;
   notifiedLogicalWidth=0;notifiedLogicalHeight=0;
-  if(!viewportCallback)renderScale=1;
+  renderScale=viewportCallback?selectedRenderScale:1;
   updateResolutionControl();
   syncViewport();
 };
 resolutionButton.addEventListener('click',()=>{
   if(!viewportCallback||gameFailed)return;
-  renderScale=renderScale===1?1.5:1;
+  selectedRenderScale=nextResolutionMode().scale;
+  renderScale=selectedRenderScale;
   updateResolutionControl();
   syncViewport();
   updatePerformance();
@@ -390,7 +406,7 @@ function updatePerformance(){
     const level=qualityName(sample.quality_level);
     const quality=level?' · 자동 '+level:'';
     const p95=Number.isFinite(sample.frame_p95_ms)?' · p95 '+sample.frame_p95_ms.toFixed(1)+'ms':'';
-    performanceLabel.textContent='v15 · 실측 '+fps+' FPS'+p95+quality;
+    performanceLabel.textContent='v16 · 실측 '+fps+' FPS'+p95+quality;
   }
   performanceLabel.title='눌러서 프레임 진단 열기 · 계산 60Hz / 화면 보간 · 실제 패널 주사율은 브라우저에서 확인되지 않습니다';
   updateDiagnostics(valid?sample:null);
