@@ -60,7 +60,7 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
   </div>
   <!-- No backdrop: taps outside this small panel still belong to the game. -->
   <section id="frame-diagnostics" role="dialog" aria-labelledby="diagnostics-title" hidden>
-    <div class="diagnostic-header"><h2 id="diagnostics-title">화면 설정 · v14</h2><button id="diagnostics-close" type="button" aria-label="화면 설정 닫기">닫기</button></div>
+    <div class="diagnostic-header"><h2 id="diagnostics-title">화면 설정 · v15</h2><button id="diagnostics-close" type="button" aria-label="화면 설정 닫기">닫기</button></div>
     <span id="screen-status" role="status" aria-live="polite">전체화면으로 더 크게 볼 수 있어요</span>
     <button id="resolution-button" type="button" aria-controls="canvas" aria-pressed="false" aria-describedby="resolution-note" disabled>선명도 1×</button>
     <span id="performance" title="Godot 게임 프레임 실측값 · 기기와 장면에 따라 달라집니다">FPS 측정 대기</span>
@@ -89,17 +89,17 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
   </div>
 </div>
 <noscript>이 게임은 JavaScript가 필요합니다.</noscript>
-<script src="plinko-godot/v14-1b006ad0df74/index.js?v=1b006ad0df74"></script>
+<script src="plinko-godot/v15-2fd144fbe6aa/index.js?v=2fd144fbe6aa"></script>
 <script>
 'use strict';
-const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"plinko-godot/v14-1b006ad0df74/index","experimentalVK":false,"fileSizes":{"plinko-godot/v14-1b006ad0df74/plinko-v16-1b006ad0df74.pck":2295020,"plinko-godot/v14-1b006ad0df74/index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"plinko-godot/v15-2fd144fbe6aa/index","experimentalVK":false,"fileSizes":{"plinko-godot/v15-2fd144fbe6aa/plinko-v16-2fd144fbe6aa.pck":2307164,"plinko-godot/v15-2fd144fbe6aa/index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 // Policy 2 overwrites parent sizing with window.innerWidth/Height every frame.
 // Policy 0 lets this shell own backing size and safe areas. Compact controls
 // share the native header without reserving another row. Default 1x bounds fill
 // work; optional 1.5x is paired with
 // Godot's CSS-sized logical viewport, never a blind devicePixelRatio multiplier.
 config.canvasResizePolicy=0;
-config.mainPack="plinko-godot/v14-1b006ad0df74/plinko-v16-1b006ad0df74.pck";
+config.mainPack="plinko-godot/v15-2fd144fbe6aa/plinko-v16-2fd144fbe6aa.pck";
 const engine=new Engine(config);
 const shell=document.getElementById('game-shell');
 const viewport=document.getElementById('game-viewport');
@@ -390,7 +390,7 @@ function updatePerformance(){
     const level=qualityName(sample.quality_level);
     const quality=level?' · 자동 '+level:'';
     const p95=Number.isFinite(sample.frame_p95_ms)?' · p95 '+sample.frame_p95_ms.toFixed(1)+'ms':'';
-    performanceLabel.textContent='v14 · 실측 '+fps+' FPS'+p95+quality;
+    performanceLabel.textContent='v15 · 실측 '+fps+' FPS'+p95+quality;
   }
   performanceLabel.title='눌러서 프레임 진단 열기 · 계산 60Hz / 화면 보간 · 실제 패널 주사율은 브라우저에서 확인되지 않습니다';
   updateDiagnostics(valid?sample:null);
