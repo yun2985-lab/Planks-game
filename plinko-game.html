@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071124">
-<title>우주 지렁이 레이스 · Belcat v18</title>
+<title>우주 지렁이 레이스 · Belcat v19</title>
 <style>
 :root{color-scheme:dark}
 *{box-sizing:border-box}
@@ -49,7 +49,7 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
 @media(max-height:480px){#loading{justify-content:flex-start}.cup{display:none}.brand{margin-top:8px}h1{font-size:22px}.foot{margin-top:14px}}
 
 </style>
-<meta name="theme-color" content="#071124"><meta name="description" content="Plinko v18 · Godot 2D Web · 1–50 racers">
+<meta name="theme-color" content="#071124"><meta name="description" content="Plinko v19 · Godot 2D Web · 1–50 racers">
 </head>
 <body>
 <!-- Keep the toolbar INSIDE the fullscreen target so the exit control stays visible. -->
@@ -60,7 +60,7 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
   </div>
   <!-- No backdrop: taps outside this small panel still belong to the game. -->
   <section id="frame-diagnostics" role="dialog" aria-labelledby="diagnostics-title" hidden>
-    <div class="diagnostic-header"><h2 id="diagnostics-title">화면 설정 · v18</h2><button id="diagnostics-close" type="button" aria-label="화면 설정 닫기">닫기</button></div>
+    <div class="diagnostic-header"><h2 id="diagnostics-title">화면 설정 · v19</h2><button id="diagnostics-close" type="button" aria-label="화면 설정 닫기">닫기</button></div>
     <span id="screen-status" role="status" aria-live="polite">전체화면으로 더 크게 볼 수 있어요</span>
     <button id="resolution-button" type="button" aria-controls="canvas" aria-pressed="false" aria-describedby="resolution-note" disabled>선명도 1×</button>
     <span id="performance" title="Godot 게임 프레임 실측값 · 기기와 장면에 따라 달라집니다">FPS 측정 대기</span>
@@ -78,7 +78,7 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
   <div id="game-viewport">
     <canvas id="canvas" tabindex="0" aria-label="우주 지렁이 레이스 게임 화면"></canvas>
     <div id="loading">
-      <div class="brand">VELKOZLAB · BELCAT EDITION v18</div><div class="cup"></div>
+      <div class="brand">VELKOZLAB · BELCAT EDITION v19</div><div class="cup"></div>
       <h1>당신에게 커피를 살 수 있는<br>영광이 있기를!</h1>
       <p>우주 지렁이 레이스<br>1–50명 · 랜덤 스킬 · 거대 UFO</p>
       <div class="line"><div id="fill"></div></div>
@@ -89,17 +89,17 @@ p{color:#97abc8;font-size:14px;line-height:1.7;margin:7px 0 28px}
   </div>
 </div>
 <noscript>이 게임은 JavaScript가 필요합니다.</noscript>
-<script src="plinko-godot/v18-610d40403471/index.js?v=610d40403471"></script>
+<script src="plinko-godot/v19-b16439e6da9d/index.js?v=b16439e6da9d"></script>
 <script>
 'use strict';
-const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"plinko-godot/v18-610d40403471/index","experimentalVK":false,"fileSizes":{"plinko-godot/v18-610d40403471/plinko-v18-610d40403471.pck":2334780,"plinko-godot/v18-610d40403471/index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"plinko-godot/v19-b16439e6da9d/index","experimentalVK":false,"fileSizes":{"plinko-godot/v19-b16439e6da9d/plinko-v19-b16439e6da9d.pck":2336764,"plinko-godot/v19-b16439e6da9d/index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 // Policy 2 overwrites parent sizing with window.innerWidth/Height every frame.
 // Policy 0 lets this shell own backing size and safe areas. Compact controls
 // share the native header without reserving another row. Balanced 1.5x starts
 // only after Godot supplies CSS-sized logical scaling. Optional 1x reduces fill
 // work; 2x is user-selected. Never use a blind devicePixelRatio multiplier.
 config.canvasResizePolicy=0;
-config.mainPack="plinko-godot/v18-610d40403471/plinko-v18-610d40403471.pck";
+config.mainPack="plinko-godot/v19-b16439e6da9d/plinko-v19-b16439e6da9d.pck";
 const engine=new Engine(config);
 const shell=document.getElementById('game-shell');
 const viewport=document.getElementById('game-viewport');
@@ -406,7 +406,7 @@ function updatePerformance(){
     const level=qualityName(sample.quality_level);
     const quality=level?' · 자동 '+level:'';
     const p95=Number.isFinite(sample.frame_p95_ms)?' · p95 '+sample.frame_p95_ms.toFixed(1)+'ms':'';
-    performanceLabel.textContent='v18 · 실측 '+fps+' FPS'+p95+quality;
+    performanceLabel.textContent='v19 · 실측 '+fps+' FPS'+p95+quality;
   }
   performanceLabel.title='눌러서 프레임 진단 열기 · 계산 60Hz / 화면 보간 · 실제 패널 주사율은 브라우저에서 확인되지 않습니다';
   updateDiagnostics(valid?sample:null);
